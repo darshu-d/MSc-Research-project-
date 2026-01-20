@@ -1,0 +1,304 @@
+---
+title: "SECOMBIT Study - Data exploration"
+output:
+  html_document: default
+  word_document: default
+date: "2025-11-24"
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+#libraries
+
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(survival)
+library(survminer)
+library(tableone)
+library(mice)
+library(plotly)
+library(table1)
+library(tidyr)
+library(readr)
+```
+
+```{r}
+#reading file 
+
+df <- read_excel("C:/Users/shiva/Desktop/MSC HDS/Research project/DATA SETS/SECOMBIT 4yr OS_raw_data_v2.xlsx")
+df <- as.data.frame(df)
+```
+
+```{r}
+#column names & trimws prevent name-matching errors
+
+names(df) <- trimws(names(df))
+names(df)
+```
+```{r}
+#renaming
+df <- df %>%
+  rename(
+    PFS.TOTAL   = `PFS TOTAL`,
+    PROGR.TOTAL = `Progr total`
+  )
+
+```
+
+```{r}
+#converting variables ()
+df$ARM <- factor(df$ARM)
+df$sites <- factor(df$sites)
+df$ULN_LDH <- factor(df$ULN_LDH)
+df$TMB <- factor(df$TMB)
+df$JAK <- factor(df$JAK)
+df$PD <- factor(df$PD)
+```
+
+```{r}
+#status
+df$status_num <- readr::parse_number(as.character(df$status))
+
+table(df$status_num, useNA = "ifany")  # you MUST see 1 and 2 here
+
+df$status01 <- dplyr::case_when(
+  df$status_num == 1 ~ 0,   # censored
+  df$status_num == 2 ~ 1,   # event
+  TRUE ~ NA_real_
+)
+
+table(df$status01, useNA = "ifany")   
+```
+# status01 is the event indicator used in survival analysis where:
+- 0 = censored (event not observed during follow-up)
+- 1 = event (e.g., death/progression depending on endpoint)
+
+```{r}
+#Basic univariate exploration of numeric variables
+
+df %>%
+  select(where(is.numeric)) %>%
+  summary()
+```
+#Provides minimum, maximum, quartiles, and mean values for numeric variables
+
+```{r}
+# Checking distribution of numeric variables
+
+df %>%
+select(where(is.numeric)) %>%
+pivot_longer(cols = everything(), names_to = "variable", values_to = "value") %>%
+ggplot(aes(x = value)) +
+geom_histogram(bins = 30, fill = "skyblue", color = "black") +
+facet_wrap(~variable, scales = "free_x")
+```
+#helps in assessing skewness, spread, and potential outliers.
+
+```{r}
+# Numeric summary
+
+numeric_summary <- df %>%
+summarise(
+mean_OS    = mean(OS, na.rm = TRUE),
+sd_OS      = sd(OS, na.rm = TRUE),
+median_OS  = median(OS, na.rm = TRUE),
+mean_PFS   = mean(PFS.TOTAL, na.rm = TRUE),
+sd_PFS     = sd(PFS.TOTAL, na.rm = TRUE),
+median_PFS = median(PFS.TOTAL, na.rm = TRUE)
+)
+
+numeric_summary
+```
+
+```{r}
+#Summary statistics for categorical variables
+
+table_cat <- table1(~ ULN_LDH | ARM, data = df)
+table_cat
+
+mortality_plot <- ggplot(df, aes(x = ARM, fill = as.factor(ULN_LDH)))+
+geom_bar(position = "dodge")+
+labs(
+title = "ULN_LDH levels by ARM",
+x = "ARM",
+y = "Levels",
+fill = "ULN_LDH"
+) +
+scale_fill_manual(values = c("pink", "black", "yellow"),
+labels = c("Missing","Normal", "Elevated")) +
+theme_minimal()
+
+ggplotly(mortality_plot)
+```
+
+```{r}
+#ARM-wise summary
+
+arm_summary <- df %>%
+group_by(ARM) %>%
+summarise(
+n = n(),
+mean_OS = mean(OS, na.rm = TRUE),
+sd_OS = sd(OS, na.rm = TRUE),
+mean_PFS = mean(PFS.TOTAL, na.rm = TRUE),
+sd_PFS = sd(PFS.TOTAL, na.rm = TRUE),
+.groups = "drop"
+)
+
+arm_summary
+```
+
+```{r}
+#Baseline variables
+
+vars <- c("sites", "ULN_LDH", "TMB", "JAK", "PD", "OS", "PFS.TOTAL")
+factorVars <- c("sites", "ULN_LDH", "TMB", "JAK", "PD")
+
+tab1 <- CreateTableOne(
+vars = vars,
+strata = "ARM",
+data = df,
+factorVars = factorVars
+)
+
+print(tab1, showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE)
+```
+
+```{r}
+df$status <- as.numeric(df$status)
+df$PD <- as.numeric(df$PD)
+df$ARM <- as.factor(df$ARM)
+
+library(survival)
+library(survminer)
+
+fit <- survfit(Surv(OS, status) ~ ARM, data = df)
+print(fit)
+plot(fit,
+     col = c("red","blue","green"),
+     lwd = 0.5,
+     xlab = "ARM",
+     ylab = "Survival status",
+     main = "Kaplain-Meier Survival curve - Overall Survival")
+legend("bottomleft",                     
+       legend = levels(df$ARM),
+       col = c("red","blue","green"),
+       lwd = 0.5,
+       cex = 0.7,
+       bty = "n") 
+```
+
+```{r}
+fit <- survfit(Surv(PFS.TOTAL, status) ~ ARM, data = df)
+print(fit)
+plot(fit,
+     col = c("red","blue","green"),
+     lwd = 0.5,
+     xlab = "ARM",
+     ylab = "Survival status",
+     main = "Kaplain-Meier Survival curve - Progression Free Survival")
+legend("bottomleft",                     
+       legend = levels(df$ARM),
+       col = c("red","blue","green"),
+       lwd = 0.5,
+       cex = 0.7,
+       bty = "n") 
+```
+
+```{r}
+#log-rank test 
+
+survdiff(Surv(OS, status01) ~ ARM, data = df)
+survdiff(Surv(PFS.TOTAL, status01) ~ ARM, data = df)
+```
+### Overall Survival
+A log-rank test comparing overall survival across treatment arms showed no statistically significant difference (χ² = 2.8, df = 2, p = 0.20).
+
+###Progression-Free Survival
+Similarly, no statistically significant difference in progression-free survival was observed between treatment arms (χ² = 3.2, df = 2, p = 0.20).
+
+###Final inference
+Since the p-values exceed the 0.05 significance level, we fail to reject the null hypothesis for both OS and PFS.
+
+```{r}
+df$status01 <- df$status   # already 0/1
+table(df$status01, useNA="ifany")
+```
+```{r}
+df_plot <- df %>%
+  dplyr::filter(!is.na(status01), !is.na(OS), !is.na(PFS.TOTAL), !is.na(ARM)) %>%
+  dplyr::mutate(status01 = factor(status01, levels = c(0, 1)))
+
+table(df_plot$status01)
+```
+```{r}
+ggplot(df_plot, aes(x = OS, y = PFS.TOTAL, color = ARM)) +
+  geom_point(
+    aes(shape = status01),
+    size = 2.8, stroke = 1,
+    position = position_jitter(width = 0.7, height = 0.7),
+    alpha = 0.85
+  ) +
+  scale_shape_manual(
+    name = "Event",
+    values = c("0" = 1, "1" = 4),
+    labels = c("Censored", "Event")
+  ) +
+  scale_color_manual(values = c("red","blue","green")) +
+  scale_y_reverse() +
+  labs(x = "Time (OS)", y = "PFS Total", color = "ARM") +
+  theme_minimal(base_size = 13) +
+  facet_wrap(~ARM, ncol = 1)
+
+```
+
+```{r}
+#COX proportion - Hazard model 
+
+cox_OS <- coxph(
+  Surv(OS, as.numeric(as.character(status))) ~ ARM + sites,
+  data=df
+)
+summary(cox_OS)
+```
+# Arm B vs Arm A
+
+- Patients in Arm B had a lower hazard of death compared to those in Arm A. (HR = 0.63, 95% CI: 0.37–1.07, p = 0.088).
+
+- However, this association did not reach statistical significance at the 0.05 level, and therefore should be interpreted as a borderline trend rather than conclusive evidence of a survival benefit.
+
+# Arm C vs Arm A
+
+- Patients in Arm C also showed a reduced hazard of death compared with Arm A. (HR = 0.72, 95% CI: 0.44–1.19, p = 0.203).
+
+- Although the point estimate suggests a potential protective effect, the confidence interval includes 1 and the p-value is not statistically significant. Thus, no evidence of a survival advantage for Arm C over Arm A was observed.
+
+```{r}
+#COX proportion - Hazard model 
+
+cox_PFS <- coxph(
+  Surv(PFS.TOTAL, as.numeric(as.character(status))) ~ ARM + sites,
+  data=df
+)
+summary(cox_PFS)
+
+```
+# Arm B vs Arm A
+
+- Patients in Arm B experienced a lower hazard of progression or death compared to Arm A. (HR = 0.61, 95% CI: 0.36–1.04, p = 0.067).
+
+- However, the result does not meet the conventional 0.05 significance threshold and should therefore be interpreted as suggestive rather than conclusive evidence of benefit.
+
+# Arm C vs Arm A
+
+- Arm C also showed a reduced hazard of progression relative to Arm A.(HR = 0.72, 95% CI: 0.44–1.20, p = 0.209).
+
+- This effect was not statistically significant, indicating no clear evidence of improved PFS compared to Arm A.
+
+### CONCLUSION:
+
+This study conducted a comprehensive exploratory and survival analysis of the SECOMBIT dataset to evaluate differences in overall survival (OS) and progression-free survival (PFS) across treatment arms. Baseline characteristics were generally well balanced between arms, indicating comparability of the treatment groups prior to outcome assessment.
+
+Descriptive analyses showed similar distributions of OS and PFS across arms, with slightly higher mean values observed in Arms B and C; however, these differences were descriptive in nature. Kaplan–Meier survival analyses demonstrated overlapping survival curves for both OS and PFS, and log-rank tests confirmed that there were no statistically significant differences in survival outcomes between treatment arms.
+
+Overall, the results suggest that treatment arm was not independently associated with survival outcomes, while lower disease burden was a key determinant of prognosis. These findings highlight the importance of baseline disease characteristics in survival outcomes and suggest that future analyses may benefit from stratified or subgroup approaches to further explore potential treatment effects in specific patient populations.
