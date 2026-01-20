@@ -1,8 +1,8 @@
 ---
 title: MSc Health Data Science Project Title
 author:
-  - name: Student A Name
-  - name: Student B Name
+  - name: Sivakamakshi Muthu Kumarasamy
+  - name: Shivadarshini Sreekanth
     affil: 1
 affiliation:
   - num: 1
@@ -58,6 +58,8 @@ library(tidyverse)
 library(plotly)
 library(kableExtra)
 ```
+
+
 
 # Background and Problem
 
