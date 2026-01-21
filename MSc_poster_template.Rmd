@@ -1,5 +1,5 @@
 ---
-title: MSc Health Data Science Project Title
+title: Handling Multiple Outcomes in Health Data
 author:
   - name: Sivakamakshi Muthu Kumarasamy
   - name: Shivadarshini Sreekanth
@@ -63,27 +63,24 @@ library(kableExtra)
 
 # Background and Problem
 
-This template has been produced using the `posterdown` package. It generates a standard conference-style poster layout.
+The analysis of multiple outcomes has become increasingly central to health research, driven by the need to understand complex disease dynamics and multifaceted treatment responses.Health research frequently examines diverse outcomes simultaneously, including survival endpoints (such as mortality or disease progression), binary classifications (like high/low risk categories), and continuous metrics (such as quality-of-life assessments). Traditional methods like separate Cox models for survival outcomes or logistic regression for binary responses treat outcomes as independent, ignoring their biological and temporal connections. Composite endpoints (e.g., PFS2) try to summarize effects but can hide differences across outcome types.
 
-<!-- You can add references by inserting the following ^[reference details here] -->
-
-A common problem in clinical research is messed up data[^1]. It can lead to bias or nonsensical results. Appropriate statistical analysis can result in superb findings in such cases, with the right assumptions.
-
-[^1]: Evans 2010, doi: 10.6030/1939-067x-3.1.1
+This approach limits realistic disease modeling, where early progression affects later survival and quality of life. Joint modeling—using shared random effects or latent processes—offers a better solution but remains rare due to computational demands and lack of standard tools.
 
 ## Objectives of Project
 
-1.  Explain the statistical issue or research question in health data science to be investigated.
-2.  Explore a method of analysis.
-3.  Apply any methods to selected datasets.
+1. To compare approaches that treat outcomes independently, via composite indices, or through multivariate frameworks, with a potential expansion to evaluate multi-task modelling. 
+
+2. Replace Traditional Univariate methods with modern integrated approaches. 
+
+3. Implement joint modelling techniques linking time-to-event, categorical and continuous outcomes via share disease pathway hierarchies.
+
 
 # Data Sources and Datasets
 
-The syntax in this poster template and the `posterdown` package uses the same workflow approach as the R Markdown you know and love.
+For the clinical trial analysis, an initial investigation will be conducted using the SECOMBIT (Sequential Combo Immuno and Target therapy) study dataset. This dataset comprises of 209 patients with metastatic melanoma and BRAF mutation assigned to a three arms prospective, randomized phase II study to evaluate the best sequential approach with combo immunotherapy (ipilimumab/nivolumab) and combo target therapy (LGX818/MEK162). The primary objective of the original study by Ascierto et al., 2023 (Ascierto et al. 2023) was to define the best sequencing combination treatment in primary efficacy variable (Overall Survival, OS) with a large number of secondary objectives including the evaluate the effects of the three sequencing combination treatments on Total Progression-Free Survival (PFS). The dataset comes from a follow up to the original study with a focus on the 4-year survival and biomarkers evaluation from the phase II SECOMBIT trial (Ascierto et al. 2024).
 
-You can even use the bibliography the same way: Our data were taken from a cluster-randomised trial [^2], available from the [Irish Social Science Data Archive](https://www.ucd.ie/issda/data/).
-
-[^2]: Murphy et al. 2005 doi: 10.1186/1468-6708-6-11
+For the predictive modelling objective the initial investigation will be conducted on the Memorial Sloan Kettering Cancer Centre (MSKCC) prostatectomy cohort. This dataset comprises of 181 patients diagnosed with primary prostate cancer who have undergone surgical treatment (prostatectomy). This data is originally from a study by Taylor et al. 2010 (Taylor et al. 2010) which focused on the annotation of prostate cancer genomes. The dataset contains three clinically important time-to-event outcomes of interest; biochemical recurrence (BCR) free survival, metastasis free survival and overall survival.
 
 <!-- This #### below causes the columns to break -->
 
@@ -98,8 +95,9 @@ Usually you want to have a nice table displaying some important results that you
 You can reference tables like so: Table \@ref(tab:mytable). Some basic summaries of the dataset are below:
 
 ```{r mytable, out.width='80%'}
-knitr::kable(iris[1:10, 1:4], caption = 'Table caption.',align = 'c',"html") %>%
-  kable_styling(font_size = 20)
+
+load("summary_stat.RData")
+summary_stat
 ```
 
 Figure \@ref(fig:standard-plot), and Figure \@ref(fig:morefigs) below show the patterns in our dataset. Make sure that all the details in your plots will be legible when printed (legend text, axis text, and any labels)

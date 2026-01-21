@@ -25,7 +25,8 @@ library(readr)
 ```{r}
 #reading file 
 
-df <- read_excel("C:/Users/shiva/Desktop/MSC HDS/Research project/DATA SETS/SECOMBIT 4yr OS_raw_data_v2.xlsx")
+df <- read.csv("Secombit data.csv")
+
 df <- as.data.frame(df)
 ```
 
@@ -39,8 +40,8 @@ names(df)
 #renaming
 df <- df %>%
   rename(
-    PFS.TOTAL   = `PFS TOTAL`,
-    PROGR.TOTAL = `Progr total`
+    PFS.TOTAL   = "PFS.TOTAL",
+    PROGR.TOTAL = "Progr.total"
   )
 
 ```
@@ -129,6 +130,15 @@ labels = c("Missing","Normal", "Elevated")) +
 theme_minimal()
 
 ggplotly(mortality_plot)
+```
+
+```{r}
+summary_stat <- table1(~ sites + ULN_LDH + TMB + JAK | ARM, data = df)
+summary_stat
+
+save(summary_stat, file = "summary_stat.RData")
+  
+
 ```
 
 ```{r}
