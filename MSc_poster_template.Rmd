@@ -36,10 +36,27 @@ div.poster_title{
   width: 80%;
 }
 .section h4 {
-    break-after: column;
+  break-after: column;
 }
 div.footnotes {
-    font-size: 18pt;
+  font-size: 18pt;
+}
+.table-wrap{
+  max-width: 100%;
+  overflow-x: auto;     
+}
+.table-wrap table.Rtable1,
+.table-wrap table{
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+.table-wrap th, .table-wrap td{
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  padding: 4px 6px !important;
+  font-size: 18pt;   
 }
 ```
 
@@ -94,27 +111,39 @@ Usually you want to have a nice table displaying some important results that you
 
 You can reference tables like so: Table \@ref(tab:mytable). Some basic summaries of the dataset are below:
 
-```{r mytable, out.width='80%'}
 
+```{r mytable, results="asis"}
 load("summary_stat.RData")
-summary_stat
+
+if (is.character(summary_stat) && grepl("^\\s*<table", summary_stat)) {
+  cat('<div class="table-wrap">')
+  cat(summary_stat)
+  cat('</div>')
+} else {
+  cat('<div class="table-wrap">')
+  print(
+    knitr::kable(summary_stat, format = "html", caption = "Summary statistics") |>
+      kableExtra::kable_styling(full_width = TRUE, font_size = 18)
+  )
+  cat('</div>')
+}
 ```
 
 Figure \@ref(fig:standard-plot), and Figure \@ref(fig:morefigs) below show the patterns in our dataset. Make sure that all the details in your plots will be legible when printed (legend text, axis text, and any labels)
 
 ```{r standard-plot, out.width='80%', fig.align='center', fig.cap='Great figure!', fig.height=4}
-ggplot(mpg, aes(displ, hwy, colour = class)) + 
-  geom_point()
+ggplot(mpg, aes(displ, hwy, colour = class)) +
+geom_point()
+
 ```
 
 ```{r morefigs, out.width='80%', echo=FALSE, fig.cap='Amazing, right?!', fig.height=4}
-
 df1 <- data.frame(dose=c("D0.5", "D1", "D2"),
-                len=c(4.2, 10, 29.5))
-ggplot(df1, aes(x=dose, y=len, fill=dose)) +
-  geom_bar(stat="identity") +
-  theme_minimal()
+len=c(4.2, 10, 29.5))
 
+ggplot(df1, aes(x=dose, y=len, fill=dose)) +
+geom_bar(stat="identity") +
+theme_minimal()
 ```
 
 You can even make your plots interactive for the HTML version of the poster. You can use the HTML poster for the presentation session, and the PDF poster will be printed - so be sure the static version looks okay.
@@ -123,20 +152,16 @@ You can even make your plots interactive for the HTML version of the poster. You
 
 gapminder <- read_csv("https://raw.githubusercontent.com/datavizpyr/data/master/gapminder-FiveYearData.csv")
 df2 <- gapminder %>%
-  filter(year %in% c(1952,2007)) %>%
-  filter(continent=="Asia") 
+filter(year %in% c(1952,2007), continent=="Asia") %>%
+mutate(paired = rep(1:(n()/2), each=2),
+year = factor(year))
 
-df2 <- df2 %>%
-  mutate(paired = rep(1:(n()/2),each=2),
-         year=factor(year))
-
-p <- df2 %>% 
-  ggplot(aes(x= lifeExp, y= country)) +
-  geom_line(aes(group = paired)) +
-  geom_point(aes(color=year), size=4) +
-  theme_bw() +
-  theme(legend.position="top")
-
+p <- df2 %>%
+ggplot(aes(x= lifeExp, y= country)) +
+geom_line(aes(group = paired)) +
+geom_point(aes(color=year), size=4) +
+theme_bw() +
+theme(legend.position="top")
 
 ggplotly(p)
 
