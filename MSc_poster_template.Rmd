@@ -132,8 +132,26 @@ if (is.character(summary_stat) && grepl("^\\s*<table", summary_stat)) {
 Figure \@ref(fig:standard-plot), and Figure \@ref(fig:morefigs) below show the patterns in our dataset. Make sure that all the details in your plots will be legible when printed (legend text, axis text, and any labels)
 
 ```{r standard-plot, out.width='80%', fig.align='center', fig.cap='Great figure!', fig.height=4}
-ggplot(mpg, aes(displ, hwy, colour = class)) +
-geom_point()
+
+library(survival)
+df <- read.csv("Secombit data.csv")
+fit <- survfit(Surv(OS, status) ~ ARM, data = df)
+print(fit)
+plot(fit,
+     col = c("red","blue","green"),
+     lwd = 0.5,
+     xlab = "ARM",
+     ylab = "Survival status",
+     main = "Kaplain-Meier Survival curve - Overall Survival")
+arm_levels <- levels(as.factor(df$ARM))
+if(length(arm_levels) > 0) {
+  legend("bottomleft",                     
+         legend = arm_levels,
+         col = c("red","blue","green")[1:length(arm_levels)],
+         lwd = 0.5,
+         cex = 0.7,
+         bty = "n")
+}
 
 ```
 
