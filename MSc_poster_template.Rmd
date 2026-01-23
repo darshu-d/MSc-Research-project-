@@ -209,5 +209,11 @@ The code and datasets for this project can be viewed at our GitHub repository he
 
 # References
 
+Ascierto, Paolo A, Milena Casula, Jenny Bulgarelli, Marina Pisano, Claudia Piccinini, Luisa Piccin, Antonio Cossu, et al. 2024. “Sequential Immunotherapy and Targeted Therapy for Metastatic BRAF V600 Mutated Melanoma: 4-Year Survival and Biomarkers Evaluation from the Phase II SECOMBIT Trial.” Nature Communications 15 (1): 146.
+
+Ascierto, Paolo A, Mario Mandalà, Pier Francesso Ferrucci, Massimo Guidoboni, Piotr Rutkowski, Virginia Ferraresi, Ana Arance, et al. 2023. “Sequencing of Ipilimumab Plus Nivolumab and Encorafenib Plus Binimetinib for Untreated BRAF-Mutated Metastatic Melanoma (SECOMBIT): A Randomized, Three-Arm, Open-Label Phase II Trial.” Journal of Clinical Oncology 41 (2): 212–21.
+
+Taylor, Barry S, Nikolaus Schultz, Haley Hieronymus, Anuradha Gopalan, Yonghong Xiao, Brett S Carver, Vivek K Arora, et al. 2010. “Integrative Genomic Profiling of Human Prostate Cancer.” Cancer Cell 18 (1): 11–22.
+
 
 
