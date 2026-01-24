@@ -12,40 +12,40 @@ logoleft_name: https&#58;//sport.universityofgalway.ie/assets/img/logo2.png
 poster_height: "594mm"
 poster_width: "841mm"
 column_numbers: 4
-column_margins: "0.5in"	
-primary_colour:	"#a80050"	# Secondary colour use for poster design.
-secondary_colour:	"#84003d"	# Main colour used for poster design.
-accent_colour:	"#e6007e"	# A third colour option.
+column_margins: "0.5in"
+
+primary_colour: "#a80050"
+secondary_colour: "#84003d"
+accent_colour: "#e6007e"
+
 author_textcol: "white"
 title_textsize: "90pt"
 author_textsize: "60pt"
 body_textsize: "25pt"
-output: 
+
+output:
   posterdown::posterdown_html:
     self_contained: true
     pandoc_args: --mathjax
     number_sections: false
-
 ---
 
 ```{css, echo=FALSE}
-div.logo_left{
-  width: 20%;
-}
-div.poster_title{
-  width: 80%;
-}
-.section h4 {
-  break-after: column;
-}
-div.footnotes {
-  font-size: 18pt;
-}
+/* Layout tweaks */
+div.logo_left{ width: 20%; }
+div.poster_title{ width: 80%; }
+
+/* Column breaks */
+.section h4 { break-after: column; }
+
+/* Footnotes */
+div.footnotes { font-size: 18pt; }
+
+/* Tables: wrap + fit */
 .table-wrap{
   max-width: 100%;
-  overflow-x: auto;     
+  overflow-x: auto;
 }
-.table-wrap table.Rtable1,
 .table-wrap table{
   width: 100% !important;
   max-width: 100% !important;
@@ -56,164 +56,257 @@ div.footnotes {
   overflow-wrap: anywhere !important;
   word-break: break-word !important;
   padding: 4px 6px !important;
-  font-size: 18pt;   
+  font-size: 18pt;
+}
+.callout{
+  border-left: 10px solid #e6007e;
+  background: rgba(230,0,126,0.08);
+  padding: 16px 18px;
+  border-radius: 14px;
+  margin: 10px 0 14px 0;
+}
+.callout h3, .callout h4{ margin-top: 0; }
+.small{ font-size: 20pt; }
+
+.section h1, 
+.section h2 {
+  font-size: 48pt !important;   
+  padding: 10px 18px !important;
+  line-height: 1.1 !important;
+}
+.section {
+  align-items: flex-start !important;
+}
+.table-wrap {
+  float: none !important;
+  clear: both !important;
+}
+h3, h4 {
+  margin-bottom: 6px !important;
+}
+.table-wrap, table, .callout, pre, blockquote {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+}
+h3, h4 {
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+
+.cox-block{
+  break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+  page-break-inside: avoid !important;
+} 
 }
 ```
 
 <!-- Don't change anything above, except the title and author names, unless you know what you are doing. -->
 
 ```{r, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,
-                      warning = FALSE,
-                      tidy = FALSE,
-                      message = FALSE,
-                      fig.align = 'center',
-                      out.width = "100%")
-options(knitr.table.format = "html") 
-# Load any additional libraries here
+knitr::opts_chunk$set(
+  echo = FALSE, warning = FALSE, message = FALSE,
+  fig.align = "center", out.width = "100%"
+)
+
+options(knitr.table.format = "html")
+
 library(tidyverse)
-library(plotly)
+library(survival)
+library(survminer)
 library(kableExtra)
+library(table1)
 ```
 
+```{r mytable, include=FALSE}
+df <- read.csv("Secombit data.csv")
+names(df) <- trimws(names(df))
 
+df$ARM   <- factor(df$ARM)
+df$sites <- factor(df$sites)
+df$status01 <- as.integer(df$status)
+df$status01[!df$status01 %in% c(0,1)] <- NA
+
+df_surv <- df %>%
+  dplyr::filter(!is.na(ARM), !is.na(sites),
+                !is.na(OS), !is.na(PFS.TOTAL),
+                !is.na(status01))
+```
 
 # Background and Problem
 
-The analysis of multiple outcomes has become increasingly central to health research, driven by the need to understand complex disease dynamics and multifaceted treatment responses.Health research frequently examines diverse outcomes simultaneously, including survival endpoints (such as mortality or disease progression), binary classifications (like high/low risk categories), and continuous metrics (such as quality-of-life assessments). Traditional methods like separate Cox models for survival outcomes or logistic regression for binary responses treat outcomes as independent, ignoring their biological and temporal connections. Composite endpoints (e.g., PFS2) try to summarize effects but can hide differences across outcome types.
+Health research increasingly needs integrated analysis of multiple outcomes (e.g., survival, progression, biomarkers, quality-of-life). Traditional approaches fit separate models for each endpoint, implicitly treating outcomes as independent and potentially missing biological and temporal links. Composite endpoints can improve simplicity but may hide heterogeneity across outcome types.
 
-This approach limits realistic disease modeling, where early progression affects later survival and quality of life. Joint modeling—using shared random effects or latent processes—offers a better solution but remains rare due to computational demands and lack of standard tools.
+<div class="callout"> <h3>Why Multiple Outcomes Matter</h3> <ul class="small"> <li>Clinical trials commonly generate <b>linked endpoints</b> (OS, PFS, biomarkers).</li> <li>Separate analyses can ignore dependency, reduce interpretability, and complicate decisions.</li> <li><b>Goal:</b> motivate and build toward multivariate / joint modelling frameworks aligned to disease pathways.</li> </ul> </div>
 
-## Objectives of Project
+# Objectives of Project
 
-1. To compare approaches that treat outcomes independently, via composite indices, or through multivariate frameworks, with a potential expansion to evaluate multi-task modelling. 
-
-2. Replace Traditional Univariate methods with modern integrated approaches. 
-
-3. Implement joint modelling techniques linking time-to-event, categorical and continuous outcomes via share disease pathway hierarchies.
-
+- Compare strategies that treat outcomes independently, via composite endpoints, and via multivariate/joint frameworks (with potential extension to multi-task modelling).
+- Replace purely univariate workflows with integrated approaches where appropriate.
+- Implement joint modelling concepts linking time-to-event and other outcomes via shared latent disease processes.
 
 # Data Sources and Datasets
 
-For the clinical trial analysis, an initial investigation will be conducted using the SECOMBIT (Sequential Combo Immuno and Target therapy) study dataset. This dataset comprises of 209 patients with metastatic melanoma and BRAF mutation assigned to a three arms prospective, randomized phase II study to evaluate the best sequential approach with combo immunotherapy (ipilimumab/nivolumab) and combo target therapy (LGX818/MEK162). The primary objective of the original study by Ascierto et al., 2023 (Ascierto et al. 2023) was to define the best sequencing combination treatment in primary efficacy variable (Overall Survival, OS) with a large number of secondary objectives including the evaluate the effects of the three sequencing combination treatments on Total Progression-Free Survival (PFS). The dataset comes from a follow up to the original study with a focus on the 4-year survival and biomarkers evaluation from the phase II SECOMBIT trial (Ascierto et al. 2024).
 
-For the predictive modelling objective the initial investigation will be conducted on the Memorial Sloan Kettering Cancer Centre (MSKCC) prostatectomy cohort. This dataset comprises of 181 patients diagnosed with primary prostate cancer who have undergone surgical treatment (prostatectomy). This data is originally from a study by Taylor et al. 2010 (Taylor et al. 2010) which focused on the annotation of prostate cancer genomes. The dataset contains three clinically important time-to-event outcomes of interest; biochemical recurrence (BCR) free survival, metastasis free survival and overall survival.
+<div class="callout"> <h3>Dataset Overview (Quick Scan)</h3> <ul class="small"> <li><b>SECOMBIT Trial</b>: Phase II randomised; N ≈ 209 metastatic melanoma; 3 arms.</li> <li><b>Endpoints</b>: Overall Survival (OS) and Total PFS.</li> <li><b>Covariates</b>: sites, ULN_LDH, TMB, JAK, PD (as available).</li> <li><b>MSKCC Prostatectomy Cohort</b>: N ≈ 181; multiple time-to-event outcomes.</li> </ul> </div>
+
+For the clinical trial component we begin with SECOMBIT (Ascierto et al., 2023; 2024). 
+
+For predictive modelling, we plan to evaluate methods on the MSKCC prostatectomy cohort (Taylor et al., 2010).
 
 <!-- This #### below causes the columns to break -->
 
 <!-- You can change where you put these breaks, and the "column_numbers: 4" argument in the YAMLS header to change the layout of the poster, with care! -->
 
-#### 
+# Descriptive Statistics of Datasets
 
-# Early Results / Descriptive Statistics of Datasets
+### Early Results and Descriptive Statistics
 
-Usually you want to have a nice table displaying some important results that you have calculated. In `posterdown` this is as easy as using the `kable` table formatting you are probably use to as per typical R Markdown formatting.
+Key clinical and biological variables are summarised for each dataset. For the SECOMBIT trial, baseline variables include disease burden measures and biomarkers such as Lactate Dehydrogenase (LDH), Tumour Mutational Burden (TMB), and pathway-related markers. LDH is clinically relevant, as elevated levels have been associated with poorer prognosis and reduced response to anti–PD-1 therapy.
 
-You can reference tables like so: Table \@ref(tab:mytable). Some basic summaries of the dataset are below:
+Categorical variables are presented using clinically meaningful thresholds (e.g., LDH classified using the Upper Limit of Normal, ULN), while continuous variables are summarised using appropriate descriptive statistics.
 
+Baseline characteristics are summarised to assess group comparability. For SECOMBIT, variables are presented across the three treatment arms, whereas for the MSKCC prostatectomy cohort, summaries are provided for the full cohort (n = 181).
 
-```{r mytable, results="asis"}
+Preliminary time-to-event analyses are conducted for Overall Survival (OS) and Progression-Free Survival (PFS). Survival distributions are visualised using Kaplan–Meier curves, with differences between treatment arms assessed using log-rank tests. Cox proportional hazards models are fitted to estimate covariate-adjusted effects, with model assumptions.
+
+Results are interpreted in both clinical and methodological contexts, highlighting the limitations of analysing multiple outcomes independently and motivating integrated modelling approaches.
+
+### Baseline Summary Table (by Arm)
+
+```{r baseline-table, results="asis", echo=FALSE}
 load("summary_stat.RData")
 
-if (is.character(summary_stat) && grepl("^\\s*<table", summary_stat)) {
-  cat('<div class="table-wrap">')
-  cat(summary_stat)
-  cat('</div>')
+cat('<div class="table-wrap">')
+
+if (inherits(summary_stat, "table1")) {
+
+  print(summary_stat)
 } else {
-  cat('<div class="table-wrap">')
   print(
-    knitr::kable(summary_stat, format = "html", caption = "Summary statistics") |>
+    knitr::kable(summary_stat, format = "html", caption = "Baseline summary (by ARM)") |>
       kableExtra::kable_styling(full_width = TRUE, font_size = 18)
   )
-  cat('</div>')
 }
+
+cat("</div>")
 ```
+### Kaplan - Meier Curve
 
-Figure \@ref(fig:standard-plot), and Figure \@ref(fig:morefigs) below show the patterns in our dataset. Make sure that all the details in your plots will be legible when printed (legend text, axis text, and any labels)
+```{r standard-plot, out.width='90%', fig.cap='Overall Survival (OS) by treatment arm.', fig.height=4, echo=FALSE}
+fit <- survfit(Surv(OS, status01) ~ ARM, data = df_surv)
 
-```{r standard-plot, out.width='80%', fig.align='center', fig.cap='Great figure!', fig.height=4}
-
-library(survival)
-df <- read.csv("Secombit data.csv")
-fit <- survfit(Surv(OS, status) ~ ARM, data = df)
-print(fit)
 plot(fit,
      col = c("red","blue","green"),
-     lwd = 0.5,
-     xlab = "ARM",
-     ylab = "Survival status",
-     main = "Kaplain-Meier Survival curve - Overall Survival")
-arm_levels <- levels(as.factor(df$ARM))
-if(length(arm_levels) > 0) {
-  legend("bottomleft",                     
-         legend = arm_levels,
-         col = c("red","blue","green")[1:length(arm_levels)],
-         lwd = 0.5,
-         cex = 0.7,
-         bty = "n")
+     lwd = 1,
+     xlab = "Time",
+     ylab = "Survival probability",
+     main = "Kaplan–Meier: Overall Survival")
+
+legend("bottomleft",
+       legend = levels(df_surv$ARM),
+       col = c("red","blue","green"),
+       lwd = 1,
+       cex = 0.8,
+       bty = "n")
+
+```
+```{r km-pfs, out.width='90%', fig.cap='Progression-Free Survival (PFS) by treatment arm.', fig.height=4, echo=FALSE}
+fit_pfs <- survfit(Surv(PFS.TOTAL, status01) ~ ARM, data = df_surv)
+
+plot(fit_pfs,
+     col = c("red","blue","green"),
+     lwd = 1,
+     xlab = "Time",
+     ylab = "PFS probability",
+     main = "Kaplan–Meier: Progression-Free Survival")
+
+legend("bottomleft",
+       legend = levels(df_surv$ARM),
+       col = c("red","blue","green"),
+       lwd = 1,
+       cex = 0.8,
+       bty = "n")
+```
+
+```{r cox-results, results="asis", echo=FALSE}
+cox_os  <- coxph(Surv(OS, status01) ~ ARM + sites, data = df_surv)
+cox_pfs <- coxph(Surv(PFS.TOTAL, status01) ~ ARM + sites, data = df_surv)
+
+make_cox_table <- function(fit){
+  s <- summary(fit)
+  out <- data.frame(
+    Term    = rownames(s$coefficients),
+    HR      = s$conf.int[,"exp(coef)"],
+    CI_low  = s$conf.int[,"lower .95"],
+    CI_high = s$conf.int[,"upper .95"],
+    p       = s$coefficients[,"Pr(>|z|)"],
+    row.names = NULL
+  ) %>%
+    mutate(
+      HR = round(HR, 3),
+      CI_low = round(CI_low, 3),
+      CI_high = round(CI_high, 3),
+      p = signif(p, 3)
+    )
+  out
 }
 
+tab_os  <- make_cox_table(cox_os)
+tab_pfs <- make_cox_table(cox_pfs)
+
+cat("<div class='cox-block'>")
+
+cat("<p style='margin:0 0 10px 0; font-size:20pt;'><b>Cox model:</b> ARM + sites</p>")
+
+cat("<h4 style='margin:8px 0 6px 0;'>Overall Survival (OS)</h4>")
+cat('<div class="table-wrap">')
+print(
+  knitr::kable(tab_os, format="html",
+               col.names = c("Term","HR","CI low","CI high","p")) |>
+    kableExtra::kable_styling(full_width = TRUE, font_size = 15,
+                              bootstrap_options = c("condensed")) |>
+    kableExtra::column_spec(1, width = "34%") |>
+    kableExtra::column_spec(2:5, width = "16%")
+)
+cat("</div>")
+
+cat("<h4 style='margin:12px 0 6px 0;'>Progression-Free Survival (PFS)</h4>")
+cat('<div class="table-wrap">')
+print(
+  knitr::kable(tab_pfs, format="html",
+               col.names = c("Term","HR","CI low","CI high","p")) |>
+    kableExtra::kable_styling(full_width = TRUE, font_size = 15,
+                              bootstrap_options = c("condensed")) |>
+    kableExtra::column_spec(1, width = "34%") |>
+    kableExtra::column_spec(2:5, width = "16%")
+)
+cat("</div>")
+
+cat("</div>") 
 ```
 
-```{r morefigs, out.width='80%', echo=FALSE, fig.cap='Amazing, right?!', fig.height=4}
-df1 <- data.frame(dose=c("D0.5", "D1", "D2"),
-len=c(4.2, 10, 29.5))
-
-ggplot(df1, aes(x=dose, y=len, fill=dose)) +
-geom_bar(stat="identity") +
-theme_minimal()
-```
-
-You can even make your plots interactive for the HTML version of the poster. You can use the HTML poster for the presentation session, and the PDF poster will be printed - so be sure the static version looks okay.
-
-```{r interactiveplot, out.width='80%', echo=FALSE, fig.cap='Amazing, right?!', fig.height=4}
-
-gapminder <- read_csv("https://raw.githubusercontent.com/datavizpyr/data/master/gapminder-FiveYearData.csv")
-df2 <- gapminder %>%
-filter(year %in% c(1952,2007), continent=="Asia") %>%
-mutate(paired = rep(1:(n()/2), each=2),
-year = factor(year))
-
-p <- df2 %>%
-ggplot(aes(x= lifeExp, y= country)) +
-geom_line(aes(group = paired)) +
-geom_point(aes(color=year), size=4) +
-theme_bw() +
-theme(legend.position="top")
-
-ggplotly(p)
-
-```
-
-#### 
+###
 
 # Next Project Steps
 
-We plan to conduct further analysis using:
-
--   Variable discombobulation [^3]
--   Expand our minds with explosive machine learning [^4].
-
-[^3]: Massey et al. 2005 doi: 15.36.413
-
-[^4]: Smith et al. 1991 doi: 12.36.486
-
-We will use the `plasticanalysis` package for this.
-
+-   Variable discombobulation
+-   Expand our minds with explosive machine learning
+-   Explore multi-task learning approaches for multi-endpoint risk prediction
 
 # GitHub
 
-The code and datasets for this project can be viewed at our GitHub repository here: <https://github.com/>
-
-
+The code and datasets for this project can be viewed at our GitHub repository here: <https://github.com/darshu-d/MSc-Research-project->
 
 # References
 
-Ascierto, Paolo A, Milena Casula, Jenny Bulgarelli, Marina Pisano, Claudia Piccinini, Luisa Piccin, Antonio Cossu, et al. 2024. “Sequential Immunotherapy and Targeted Therapy for Metastatic BRAF V600 Mutated Melanoma: 4-Year Survival and Biomarkers Evaluation from the Phase II SECOMBIT Trial.” Nature Communications 15 (1): 146.
+Ascierto PA et al., SECOMBIT 4-year results. *Nat Commun* (2024).
 
-Ascierto, Paolo A, Mario Mandalà, Pier Francesso Ferrucci, Massimo Guidoboni, Piotr Rutkowski, Virginia Ferraresi, Ana Arance, et al. 2023. “Sequencing of Ipilimumab Plus Nivolumab and Encorafenib Plus Binimetinib for Untreated BRAF-Mutated Metastatic Melanoma (SECOMBIT): A Randomized, Three-Arm, Open-Label Phase II Trial.” Journal of Clinical Oncology 41 (2): 212–21.
+Ascierto PA et al., SECOMBIT sequencing trial. *J Clin Oncol* (2023).
 
-Taylor, Barry S, Nikolaus Schultz, Haley Hieronymus, Anuradha Gopalan, Yonghong Xiao, Brett S Carver, Vivek K Arora, et al. 2010. “Integrative Genomic Profiling of Human Prostate Cancer.” Cancer Cell 18 (1): 11–22.
+Taylor BS et al., Integrative genomic profiling of prostate cancer. *Cancer Cell* (2010).
+
+
 
 
 
