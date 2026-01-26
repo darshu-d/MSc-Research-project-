@@ -135,9 +135,10 @@ df_surv <- df %>%
 
 # Background and Problem
 
-Health research increasingly needs integrated analysis of multiple outcomes (e.g., survival, progression, biomarkers, quality-of-life). Traditional approaches fit separate models for each endpoint, implicitly treating outcomes as independent and potentially missing biological and temporal links. Composite endpoints can improve simplicity but may hide heterogeneity across outcome types.
+Health research often involves **multiple outcomes** (e.g., survival, disease progression, quality-of-life scores). Traditional approaches analyse outcomes separately, implicitly treating outcomes as independent and potentially missing biological and temporal links. Alternatively, composite endpoints can be used but may hide heterogeneity in clinical importance, frequency, and treatment response. As a result, both predictive performance and clinical interpretability may be compromised.
 
-<div class="callout"> <h3>Why Multiple Outcomes Matter</h3> <ul class="small"> <li>Clinical trials commonly generate <b>linked endpoints</b> (OS, PFS, biomarkers).</li> <li>Separate analyses can ignore dependency, reduce interpretability, and complicate decisions.</li> <li><b>Goal:</b> motivate and build toward multivariate / joint modelling frameworks aligned to disease pathways.</li> </ul> </div>
+
+<div class="callout"> <h3>Why Multiple Outcomes Matter</h3> <ul class="small"> <li>**Clinical trials:** Win-ratio preserves the hierarchy of endpoints importance while combining the analysis of the affect.</li> <li>**Prediction:** Multi-state models can be used to model a process where subjects transition from one state to the next. And multi-task models are deep learning models which use common pathways to predict multi outcomes of interest.</li> </ul> </div>
 
 # Objectives of Project
 
