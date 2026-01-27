@@ -84,6 +84,10 @@ table thead th {
 h3, h4 {
   margin-bottom: 6px !important;
 }
+/* Reduce gap before KM section */
+h3, h4 {
+  margin-top: 6px !important;
+}
 .table-wrap, table, .callout, pre, blockquote {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
@@ -104,6 +108,30 @@ pre, code {
   overflow-wrap: anywhere !important;
   word-break: break-word !important;
   font-size: 16pt !important;
+/* ===============================
+   MULTI-STATE DIAGRAM (DiagrammeR) – REMOVE SPACE
+   =============================== */
+
+/* Wrapper you will add around the diagram */
+.ms-diagram{
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* DiagrammeR htmlwidget container adds whitespace */
+.ms-diagram .html-widget,
+.ms-diagram .grViz,
+.ms-diagram .diagrammer,
+.ms-diagram svg{
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+/* Pull next heading up (tight) */
+.ms-diagram + h3,
+.ms-diagram + h4{
+  margin-top: 0px !important;
 }
 ```
 <!-- Don't change anything above, except the title and author names, unless you know what you are doing. -->
@@ -212,55 +240,55 @@ table1(~ Sites + LDH + TMB + JAK | Arm,
        data = clean_df,
        overall = FALSE)
 ```
+
+```{r ms-diagram, results="asis", echo=FALSE, fig.height=1.0}
+cat('<div class="ms-diagram">')
+
+library(DiagrammeR)
+grViz("
+digraph ms {
+  graph [rankdir = LR, nodesep=0.2, ranksep=0.25]
+  node [shape=box, style=filled, fillcolor=white, penwidth=3, fontsize=14]
+  edge [penwidth=3, arrowsize=1.0]
+
+  A [label='Baseline (initial=0)']
+  B [label='Progress (stage=1)']
+  C [label='Death (stage=2)']
+
+  A -> B
+  A -> C
+  B -> C
+}
+")
+
+cat('</div>')
+
+```
+
 ### Kaplan - Meier Plot
 
-```{r standard-plot, out.width='90%', fig.cap='Overall Survival (OS) by treatment arm.', fig.height=4, echo=FALSE}
+```{r km-os, echo=FALSE, fig.height=2.2, fig.width=6, out.width="100%"}
+par(mar = c(3, 3, 1.1, 1))
 fit_os <- survfit(Surv(os_time, os_status) ~ Arm, data = clean_df)
 
 ggsurvplot(
   fit_os, data = clean_df,
-  xlab = "Time (months)",
-  ylab = "Survival probability",
+  xlab = "Time (months)", ylab = "Survival probability",
   title = "Overall Survival (OS)",
-  risk.table = TRUE,
-  pval = TRUE,
-  conf.int = TRUE
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE
 )
 ```
-
-```{r km-pfs, out.width='90%', fig.cap='Progression-Free Survival (PFS) by treatment arm.', fig.height=4, echo=FALSE}
+```{r km-pfs, echo=FALSE, fig.height=2.2, fig.width=6, out.width="100%"}
+par(mar = c(3, 3, 1.1, 1))
 fit_pfs <- survfit(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
 
 ggsurvplot(
   fit_pfs, data = clean_df,
-  xlab = "Time (months)",
-  ylab = "Survival probability",
+  xlab = "Time (months)", ylab = "Survival probability",
   title = "Progression-Free Survival (PFS)",
-  risk.table = TRUE,
-  pval = TRUE,
-  conf.int = TRUE
-)
-```
-
-
-### Log-rank tests
-
-```{r logrank-table, results="asis", echo=FALSE}
-logrank_os  <- survdiff(Surv(os_time, os_status) ~ Arm, data = clean_df)
-logrank_pfs <- survdiff(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
-
-p_os  <- 1 - pchisq(logrank_os$chisq,  df = length(logrank_os$n)  - 1)
-p_pfs <- 1 - pchisq(logrank_pfs$chisq, df = length(logrank_pfs$n) - 1)
-
-logrank_tab <- data.frame(
-  Endpoint = c("OS", "PFS"),
-  `Chi-square` = round(c(logrank_os$chisq, logrank_pfs$chisq), 2),
-  df = c(length(logrank_os$n)-1, length(logrank_pfs$n)-1),
-  `p-value` = signif(c(p_os, p_pfs), 3)
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE
 )
 
-knitr::kable(logrank_tab, format = "html", align = "lccc") |>
-  kableExtra::kable_styling(full_width = TRUE, font_size = 18)
 ```
 
 ```{r cox-tables, results="asis", echo=FALSE}
@@ -290,7 +318,28 @@ tidy_cox(cox_os,  "Cox model — Overall Survival (OS)")
 cat("<br>")
 tidy_cox(cox_pfs, "Cox model — Progression-Free Survival (PFS)")
 ```
+### Log-rank tests
+
+```{r logrank-table, results="asis", echo=FALSE}
+logrank_os  <- survdiff(Surv(os_time, os_status) ~ Arm, data = clean_df)
+logrank_pfs <- survdiff(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
+
+p_os  <- 1 - pchisq(logrank_os$chisq,  df = length(logrank_os$n)  - 1)
+p_pfs <- 1 - pchisq(logrank_pfs$chisq, df = length(logrank_pfs$n) - 1)
+
+logrank_tab <- data.frame(
+  Endpoint = c("OS", "PFS"),
+  `Chi-square` = round(c(logrank_os$chisq, logrank_pfs$chisq), 2),
+  df = c(length(logrank_os$n)-1, length(logrank_pfs$n)-1),
+  `p-value` = signif(c(p_os, p_pfs), 3)
+)
+
+knitr::kable(logrank_tab, format = "html", align = "lccc") |>
+  kableExtra::kable_styling(full_width = TRUE, font_size = 18)
+```
+
 ### plot - Ph Test
+
 ```{r ph-global, results="asis", echo=FALSE}
 ph_os  <- cox.zph(cox_os)
 ph_pfs <- cox.zph(cox_pfs)
