@@ -84,10 +84,6 @@ table thead th {
 h3, h4 {
   margin-bottom: 6px !important;
 }
-/* Reduce gap before KM section */
-h3, h4 {
-  margin-top: 6px !important;
-}
 .table-wrap, table, .callout, pre, blockquote {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
@@ -108,17 +104,12 @@ pre, code {
   overflow-wrap: anywhere !important;
   word-break: break-word !important;
   font-size: 16pt !important;
-/* ===============================
-   MULTI-STATE DIAGRAM (DiagrammeR) – REMOVE SPACE
-   =============================== */
 
-/* Wrapper you will add around the diagram */
 .ms-diagram{
   margin: 0 !important;
   padding: 0 !important;
 }
 
-/* DiagrammeR htmlwidget container adds whitespace */
 .ms-diagram .html-widget,
 .ms-diagram .grViz,
 .ms-diagram .diagrammer,
@@ -128,7 +119,6 @@ pre, code {
   display: block !important;
 }
 
-/* Pull next heading up (tight) */
 .ms-diagram + h3,
 .ms-diagram + h4{
   margin-top: 0px !important;
@@ -163,7 +153,6 @@ library(table1)
 
 SECOMBIT <- read.csv("Secombit data.csv", check.names = FALSE)
 
-# ---- HARD CHECK: stop knitting if any required column is missing ----
 required_cols <- c("ordine","ARM","sites","ULN_LDH","TMB","JAK","OS","status","PFS TOTAL","Progr total")
 missing_cols <- setdiff(required_cols, names(SECOMBIT))
 if (length(missing_cols) > 0) {
@@ -241,19 +230,38 @@ table1(~ Sites + LDH + TMB + JAK | Arm,
        overall = FALSE)
 ```
 
-```{r ms-diagram, results="asis", echo=FALSE, fig.height=1.0}
+```{r ms-diagram, results="asis", echo=FALSE, fig.height=1.8}
 cat('<div class="ms-diagram">')
 
 library(DiagrammeR)
+
 grViz("
 digraph ms {
-  graph [rankdir = LR, nodesep=0.2, ranksep=0.25]
-  node [shape=box, style=filled, fillcolor=white, penwidth=3, fontsize=14]
-  edge [penwidth=3, arrowsize=1.0]
+  graph [
+    rankdir = LR,
+    nodesep = 0.35,
+    ranksep = 0.55
+  ]
 
-  A [label='Baseline (initial=0)']
-  B [label='Progress (stage=1)']
-  C [label='Death (stage=2)']
+  node [
+    shape = box,
+    style = filled,
+    fillcolor = white,
+    penwidth = 3,
+    fontsize = 18
+  ]
+
+  edge [
+    penwidth = 3,
+    arrowsize = 1.2
+  ]
+
+  A [label = 'Baseline (initial = 0)']
+  B [label = 'Progress (stage = 1)']
+  C [label = 'Death (stage = 2)']
+
+  { rank = same; A; B }
+  { rank = same; C }
 
   A -> B
   A -> C
@@ -262,7 +270,6 @@ digraph ms {
 ")
 
 cat('</div>')
-
 ```
 
 ### Kaplan - Meier Plot
@@ -337,8 +344,7 @@ logrank_tab <- data.frame(
 knitr::kable(logrank_tab, format = "html", align = "lccc") |>
   kableExtra::kable_styling(full_width = TRUE, font_size = 18)
 ```
-
-### plot - Ph Test
+### Ph Test
 
 ```{r ph-global, results="asis", echo=FALSE}
 ph_os  <- cox.zph(cox_os)
