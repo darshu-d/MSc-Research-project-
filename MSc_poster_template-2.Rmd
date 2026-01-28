@@ -211,7 +211,9 @@ Health research often involves **multiple outcomes** (e.g., survival, disease pr
 
 # Data Source
 - **SECOMBIT Trial:** Phase II randomised; N ≈ 209 metastatic melanoma; 3 arms<sup>5,6</sup>.
+
 - **Endpoints:** Overall Survival (OS) and Progression Free Survival (PFS).
+
 - **Covariates:** Sites, Lactate Dehydrogenase (LDH), Tumour Mutational Burden (TMB), a genetic biomarker (JAK).
 
 

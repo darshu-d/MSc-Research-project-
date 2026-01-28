@@ -339,7 +339,7 @@ digraph ms {
      label = < <B>Multi-state  Survival Model</B> >,
     labelloc = t,
     labeljust = c,
-    fontsize = 20,
+    fontsize = 20
   ]
 
   node [
@@ -355,9 +355,9 @@ digraph ms {
     arrowsize = 1.2
   ]
 
-  A [label = 'Baseline (initial = 0)']
-  B [label = 'Progress (stage = 1)']
-  C [label = 'Death (stage = 2)']
+  A [label = 'Baseline (initial state = 0)']
+  B [label = 'Progress (state = 1)']
+  C [label = 'Death (state = 2)']
 
   { rank = same; A; B }
   { rank = same; C }
