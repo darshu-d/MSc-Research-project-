@@ -1,7 +1,8 @@
 ---
-title: Handling Multiple Outcomes in Health Data
+title: Methods for Handling Multiple Outcomes in Health Data
 author:
   - name: Sivakamakshi Muthu Kumarasamy
+    affil: 1
   - name: Shivadarshini Sreekanth
     affil: 1
 affiliation:
@@ -19,9 +20,9 @@ secondary_colour: "#84003d"
 accent_colour: "#e6007e"
 
 author_textcol: "white"
-title_textsize: "90pt"
+title_textsize: "70pt"
 author_textsize: "60pt"
-body_textsize: "25pt"
+body_textsize: "23.5pt"
 
 output:
   posterdown::posterdown_html:
@@ -191,9 +192,9 @@ clean_df <- SECOMBIT %>%
 
 # Background and Problem
 
-Health research often involves *multiple outcomes* (e.g., survival, disease progression, quality-of-life scores). Traditional approaches analyse outcomes separately, implicitly treating outcomes as independent and potentially missing biological and temporal links. Alternatively, composite endpoints can be used but may hide heterogeneity in clinical importance, frequency, and treatment response. As a result, both predictive performance and clinical interpretability may be compromised.
+Health research often involves **multiple outcomes** (e.g., survival, disease progression, quality-of-life scores). Traditional approaches analyse outcomes separately, implicitly treating outcomes as independent and potentially missing biological and temporal links. Alternatively, composite endpoints can be used but may hide heterogeneity in clinical importance, frequency, and treatment response. As a result, both predictive performance and clinical interpretability may be compromised.
 
-<div class="callout"> <h3>Emerging Methods</h3> <ul class="small"> <li>*Clinical trials:* Win-ratio preserves the hierarchy of endpoints importance while combining the analysis of the affect.</li> <li>*Prediction:* Multi-state models can be used to model a process where subjects transition from one state to the next. And multi-task models are deep learning models which use common pathways to predict multi outcomes of interest.</li> </ul> </div>
+<div class="callout" style="font-size: 0.75em;"> <h3>Emerging Methods</h3> <ul class="small"> <li>**Clinical trials:** Win-ratio preserves the hierarchy of endpoints importance while combining the analysis of the affect.</li> <li>**Prediction:** Multi-state models can be used to model a process where subjects transition from one state to the next. And multi-task models are deep learning models which use common pathways to predict multi outcomes of interest.</li> </ul> </div>
 
 # Objectives of Project
 
@@ -201,7 +202,7 @@ Compare strategies for both clinical trial design and prediction modelling that 
 
 # Data Source
 
-<div class="callout"> <h3>Dataset Overview </h3> <ul class="small"> <li><b>SECOMBIT Trial</b>: Phase II randomised; N ≈ 209 metastatic melanoma; 3 arms.</li> <li><b>Endpoints</b>: Overall Survival (OS) and Progression Free Survival (PFS).</li> <li><b>Covariates</b>: Sites, Lactate Dehydrogenase (LDH), Tumour Mutational Burden (TMB), a genetic biomarker (JAK). </li> </ul> </div>
+<div class="callout" style="font-size: 0.75em;"> <h3>Dataset Overview </h3> <ul class="small"> <li><b>SECOMBIT Trial</b>: Phase II randomised; N ≈ 209 metastatic melanoma; 3 arms.</li> <li><b>Endpoints</b>: Overall Survival (OS) and Progression Free Survival (PFS).</li> <li><b>Covariates</b>: Sites, Lactate Dehydrogenase (LDH), Tumour Mutational Burden (TMB), a genetic biomarker (JAK). </li> </ul> </div>
 
 This data set is used for both clinical trial and predictive modelling. In this clinical trial, the three treatment arms were considered as different combinations of first-line treatment strategies with a primary otucome of Overall Survival and secondary outcomes included Progression-Free Survival.
 
@@ -213,7 +214,7 @@ This data set is used for both clinical trial and predictive modelling. In this 
 
 ### Early Results and Descriptive Statistics
 
-Preliminary time-to-event analyses was conducted for Overall Survival (OS) and Progression-Free Survival (PFS) separately. Survival distributions are visualised using Kaplan–Meier curves. There was no evidence of a difference in OS between three treatment arms (log-rank test :  chi-sqaured = 2.8, p-value = 0.20). Cox proportional hazards models are fitted to estimate covariate-adjusted effects, and as a preliminary predictive modelling strategy.
+Preliminary time-to-event analyses was conducted for Overall Survival (OS) and Progression-Free Survival (PFS) separately. Survival distributions are visualised using Kaplan–Meier plots. There was no evidence of a difference in OS between three treatment arms (log-rank test :  chi-squared = 2.8, p-value = 0.20). Cox proportional hazards models are fitted to estimate covariate-adjusted effects, and as a preliminary predictive modelling strategy.
 
 Results are interpreted in both clinical and methodological contexts, highlighting the limitations of analysing multiple outcomes independently and motivating integrated modelling approaches.
 
@@ -228,48 +229,6 @@ label(clean_df$JAK)   <- "JAK"
 table1(~ Sites + LDH + TMB + JAK | Arm,
        data = clean_df,
        overall = FALSE)
-```
-
-```{r ms-diagram, results="asis", echo=FALSE, fig.height=1.8}
-cat('<div class="ms-diagram">')
-
-library(DiagrammeR)
-
-grViz("
-digraph ms {
-  graph [
-    rankdir = LR,
-    nodesep = 0.35,
-    ranksep = 0.55
-  ]
-
-  node [
-    shape = box,
-    style = filled,
-    fillcolor = white,
-    penwidth = 3,
-    fontsize = 18
-  ]
-
-  edge [
-    penwidth = 3,
-    arrowsize = 1.2
-  ]
-
-  A [label = 'Baseline (initial = 0)']
-  B [label = 'Progress (stage = 1)']
-  C [label = 'Death (stage = 2)']
-
-  { rank = same; A; B }
-  { rank = same; C }
-
-  A -> B
-  A -> C
-  B -> C
-}
-")
-
-cat('</div>')
 ```
 
 ### Kaplan - Meier Plot
@@ -342,9 +301,9 @@ logrank_tab <- data.frame(
 )
 
 knitr::kable(logrank_tab, format = "html", align = "lccc") |>
-  kableExtra::kable_styling(full_width = TRUE, font_size = 18)
+  kableExtra::kable_styling(full_width = TRUE, font_size = 16)
 ```
-### Ph Test
+### PH Test
 
 ```{r ph-global, results="asis", echo=FALSE}
 ph_os  <- cox.zph(cox_os)
@@ -364,6 +323,53 @@ knitr::kable(ph_tab, format="html") |>
 - Assess the potential of hierarchical endpoint analysis such as the Win-Ratio
 - Explore multi-state methods and multi-task learning approaches for multi-endpoint risk prediction
 - Apply methods to more complex dataset
+
+
+```{r ms-diagram, results="asis", echo=FALSE, fig.height=1.8}
+cat('<div class="ms-diagram">')
+
+library(DiagrammeR)
+
+grViz("
+digraph ms {
+  graph [
+    rankdir = LR,
+    nodesep = 0.35,
+    ranksep = 0.55
+     label = < <B>Multi-state  Survival Model</B> >,
+    labelloc = t,
+    labeljust = c,
+    fontsize = 20,
+  ]
+
+  node [
+    shape = box,
+    style = filled,
+    fillcolor = white,
+    penwidth = 3,
+    fontsize = 18
+  ]
+
+  edge [
+    penwidth = 3,
+    arrowsize = 1.2
+  ]
+
+  A [label = 'Baseline (initial = 0)']
+  B [label = 'Progress (stage = 1)']
+  C [label = 'Death (stage = 2)']
+
+  { rank = same; A; B }
+  { rank = same; C }
+
+  A -> B
+  A -> C
+  B -> C
+}
+")
+
+cat('</div>')
+```
 
 # GitHub
 The code and datasets for this project can be viewed at our GitHub repository here: <https://github.com/darshu-d/MSc-Research-project->
