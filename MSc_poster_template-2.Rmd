@@ -1,0 +1,387 @@
+---
+title: Methods for Handling Multiple Outcomes in Health Data
+author:
+  - name: Sivakamakshi Muthu Kumarasamy
+    affil: 1
+  - name: Shivadarshini Sreekanth
+    affil: 1
+affiliation:
+  - num: 1
+    address: School of Mathematical and Statistical Sciences, University of Galway
+logoleft_name: https&#58;//sport.universityofgalway.ie/assets/img/logo2.png
+
+poster_height: "594mm"
+poster_width: "841mm"
+column_numbers: 4
+column_margins: "0.5in"
+
+primary_colour: "#a80050"
+secondary_colour: "#84003d"
+accent_colour: "#e6007e"
+
+author_textcol: "white"
+title_textsize: "70pt"
+author_textsize: "60pt"
+body_textsize: "23.5pt"
+
+output:
+  posterdown::posterdown_html:
+    self_contained: true
+    pandoc_args: --mathjax
+    number_sections: false
+---
+
+```{css, echo=FALSE}
+/* Layout tweaks */
+div.logo_left{ width: 20%; }
+div.poster_title{ width: 80%; }
+
+/* Column breaks */
+.section h4 { break-after: column; }
+
+/* Footnotes */
+div.footnotes { font-size: 18pt; }
+
+.table-wrap{
+  max-width: 100%;
+  overflow-x: auto;
+}
+.table-wrap th,
+.table-wrap td,
+table th,
+table td {
+  font-size: 22pt !important; 
+  padding: 8px 10px !important;
+  line-height: 1.25 !important;
+}
+table thead th {
+  font-size: 24pt !important;
+  font-weight: 600;
+}
+}
+.callout{
+  border-left: 10px solid #e6007e;
+  background: rgba(230,0,126,0.08);
+  padding: 16px 18px;
+  border-radius: 14px;
+  margin: 10px 0 14px 0;
+}
+.callout h3, .callout h4{ margin-top: 0; }
+.small{ font-size: 20pt; }
+
+.section h1, 
+.section h2 {
+  font-size: 48pt !important;   
+  padding: 10px 18px !important;
+  line-height: 1.1 !important;
+}
+.section {
+  align-items: flex-start !important;
+}
+.table-wrap {
+  float: none !important;
+  clear: both !important;
+}
+h3, h4 {
+  margin-bottom: 6px !important;
+}
+.table-wrap, table, .callout, pre, blockquote {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+}
+h3, h4 {
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
+
+.cox-block{
+  break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+pre, code {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  font-size: 16pt !important;
+
+.ms-diagram{
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.ms-diagram .html-widget,
+.ms-diagram .grViz,
+.ms-diagram .diagrammer,
+.ms-diagram svg{
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+.ms-diagram + h3,
+.ms-diagram + h4{
+  margin-top: 0px !important;
+}
+```
+<!-- Don't change anything above, except the title and author names, unless you know what you are doing. -->
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, warning = FALSE, message = FALSE,
+  fig.align = "center", out.width = "100%"
+)
+
+options(knitr.table.format = "html")
+
+library(tidyverse)
+library(survival)
+library(survminer)
+library(kableExtra)
+library(table1)
+library(dplyr)
+library(table1)
+```
+
+```{r setup-data, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(dplyr)
+library(survival)
+library(survminer)
+library(table1)
+
+SECOMBIT <- read.csv("Secombit data.csv", check.names = FALSE)
+
+required_cols <- c("ordine","ARM","sites","ULN_LDH","TMB","JAK","OS","status","PFS TOTAL","Progr total")
+missing_cols <- setdiff(required_cols, names(SECOMBIT))
+if (length(missing_cols) > 0) {
+  stop("Missing columns in CSV: ", paste(missing_cols, collapse = ", "),
+       "\n\nAvailable columns are:\n", paste(names(SECOMBIT), collapse = ", "))
+}
+
+to_event01 <- function(x) {
+  if (is.factor(x)) x <- as.character(x)
+  x_chr <- trimws(tolower(as.character(x)))
+  suppressWarnings(x_num <- as.numeric(x_chr))
+  if (mean(is.na(x_num)) < 0.5) {
+    return(ifelse(is.na(x_num), NA, ifelse(x_num > 0, 1, 0)))
+  }
+  event_labels    <- c("1","event","dead","death","progressed","progression","yes","true")
+  censored_labels <- c("0","censored","alive","no","false")
+  ifelse(x_chr %in% event_labels, 1,
+         ifelse(x_chr %in% censored_labels, 0, NA))
+}
+
+clean_df <- SECOMBIT %>%
+  transmute(
+    id = ordine,
+    Arm   = factor(ARM, levels = c("A","B","C")),
+    Sites = factor(sites, levels = c("1-2", ">=3"), labels = c("1 - 2", ">= 3")),
+    LDH   = factor(ULN_LDH, levels = c("normal","elevated"), labels = c("Normal","Elevated")),
+    TMB   = factor(TMB, levels = c("<10",">=10"), labels = c("< 10", ">= 10")),
+    JAK   = factor(JAK, levels = c("wt","mut"), labels = c("Wild Type (Normal)", "Mutated")),
+    os_time   = suppressWarnings(as.numeric(OS)),
+    os_status = to_event01(status),
+    pfs_time   = suppressWarnings(as.numeric(`PFS TOTAL`)),
+    pfs_status = to_event01(`Progr total`)
+  ) %>%
+  filter(!is.na(os_time), !is.na(os_status), !is.na(pfs_time), !is.na(pfs_status))
+```
+
+# Background and Problem
+
+Health research often involves **multiple outcomes** (e.g., survival, disease progression)<sup>1</sup>.
+
+**Current Methods**
+
+- Analyse outcomes **separately**: Treats outcomes as independent and potentially miss biological and temporal links.
+- **Composite** endpoints: May hide heterogeneity in clinical importance, frequency, and treatment response. Losing predictive performance and clinical interpretability.
+
+
+**Emerging Methods**
+
+- Clinical trials: **Win-ratio** preserves the hierarchy of endpoints importance while combining the analysis of the affect<sup>2</sup>.
+- Prediction: **Multi-state models** can be used to model a process where subjects transition from one state to the next<sup>3</sup>. And **multi-task models** are deep learning models which use common pathways to predict multi outcomes of interest<sup>4</sup>.
+
+# Objectives of Project
+
+**Compare** strategies for both clinical trial design and prediction modelling that **treat outcomes independently**, as **composite** endpoints, and via **emerging methods**.
+
+# Data Source
+- **SECOMBIT Trial:** Phase II randomised; N ≈ 209 metastatic melanoma; 3 arms<sup>5,6</sup>.
+- **Endpoints:** Overall Survival (OS) and Progression Free Survival (PFS).
+- **Covariates:** Sites, Lactate Dehydrogenase (LDH), Tumour Mutational Burden (TMB), a genetic biomarker (JAK).
+
+
+<!-- This #### below causes the columns to break -->
+
+<!-- You can change where you put these breaks, and the "column_numbers: 4" argument in the YAMLS header to change the layout of the poster, with care! -->
+
+**Baseline Summary Table (by Arm)**
+
+```{r baseline-table, results="asis"}
+label(clean_df$Sites) <- "Sites"
+label(clean_df$LDH)   <- "LDH"
+label(clean_df$TMB)   <- "TMB"
+label(clean_df$JAK)   <- "JAK"
+
+table1(~ Sites + LDH + TMB + JAK | Arm,
+       data = clean_df,
+       overall = FALSE)
+```
+
+# Preliminary Analysis
+
+Time-to-event analyses was conducted for Overall Survival (OS) and Progression-Free Survival (PFS) separately. Survival distributions are visualised using Kaplan–Meier plots. Cox proportional hazards models are fitted to estimate covariate-adjusted effects, and as a preliminary predictive modelling strategy.
+
+**Kaplan - Meier Plot**
+
+```{r km-os, echo=FALSE, fig.height=3, fig.width=6, out.width="100%"}
+par(mar = c(3, 3, 1.1, 1))
+fit_os <- survfit(Surv(os_time, os_status) ~ Arm, data = clean_df)
+
+ggsurvplot(
+  fit_os, data = clean_df,
+  xlab = "Time (months)", ylab = "Survival probability",
+  title = "Overall Survival (OS)",
+  risk.table = FALSE, pval = TRUE
+)
+```
+```{r km-pfs, echo=FALSE, fig.height=3, fig.width=6, out.width="100%"}
+par(mar = c(3, 3, 1.1, 1))
+fit_pfs <- survfit(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
+
+ggsurvplot(
+  fit_pfs, data = clean_df,
+  xlab = "Time (months)", ylab = "Survival probability",
+  title = "Progression-Free Survival (PFS)",
+  risk.table = FALSE, pval = TRUE
+)
+
+```
+
+**Log-rank tests**
+
+```{r logrank-table, results="asis", echo=FALSE}
+logrank_os  <- survdiff(Surv(os_time, os_status) ~ Arm, data = clean_df)
+logrank_pfs <- survdiff(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
+
+p_os  <- 1 - pchisq(logrank_os$chisq,  df = length(logrank_os$n)  - 1)
+p_pfs <- 1 - pchisq(logrank_pfs$chisq, df = length(logrank_pfs$n) - 1)
+
+logrank_tab <- data.frame(
+  Endpoint = c("OS", "PFS"),
+  `Chi-square` = round(c(logrank_os$chisq, logrank_pfs$chisq), 2),
+  df = c(length(logrank_os$n)-1, length(logrank_pfs$n)-1),
+  `p-value` = signif(c(p_os, p_pfs), 3)
+)
+
+knitr::kable(logrank_tab, format = "html", align = "lccc") |>
+  kableExtra::kable_styling(full_width = TRUE, font_size = 16)
+```
+
+
+
+```{r cox-tables, results="asis", echo=FALSE}
+library(broom)
+
+cox_os  <- coxph(Surv(os_time, os_status) ~ Arm + Sites + LDH + TMB + JAK,
+                 data = clean_df, ties = "efron")
+cox_pfs <- coxph(Surv(pfs_time, pfs_status) ~ Arm + Sites + LDH + TMB + JAK,
+                 data = clean_df, ties = "efron")
+
+tidy_cox <- function(fit, title){
+  broom::tidy(fit, exponentiate = TRUE, conf.int = TRUE) |>
+    mutate(
+      HR_CI = sprintf("%.2f (%.2f–%.2f)", estimate, conf.low, conf.high),
+      p = signif(p.value, 3)
+    ) |>
+    select(term, HR_CI, p) |>
+    rename(Variable = term, `HR (95% CI)` = HR_CI, `p-value` = p) |>
+    (\(df){
+      cat(paste0("<b>", title, "</b>"))
+      knitr::kable(df, format="html", escape=TRUE) |>
+        kableExtra::kable_styling(full_width=TRUE, font_size=18)
+    })()
+}
+
+tidy_cox(cox_os,  "Cox model — Overall Survival (OS)")
+cat("<br>")
+tidy_cox(cox_pfs, "Cox model — Progression-Free Survival (PFS)")
+```
+
+**Proportial Hazard Test**
+
+```{r ph-global, results="asis", echo=FALSE}
+ph_os  <- cox.zph(cox_os)
+ph_pfs <- cox.zph(cox_pfs)
+
+ph_tab <- data.frame(
+  Endpoint = c("OS", "PFS"),
+  `PH test p-value` = signif(c(ph_os$table["GLOBAL","p"], ph_pfs$table["GLOBAL","p"]), 3)
+)
+
+knitr::kable(ph_tab, format="html") |>
+  kableExtra::kable_styling(full_width=TRUE, font_size=18)
+```
+
+# Future Work
+- Compare independent outcome assessment with composite outcome approach
+- Assess the potential of hierarchical endpoint analysis such as the Win-Ratio
+- Explore multi-state methods and multi-task learning approaches for multi-endpoint risk prediction
+- Apply methods to more complex dataset
+
+
+<!-- ```{r ms-diagram, results="asis", echo=FALSE, fig.height=1.8} -->
+<!-- cat('<div class="ms-diagram">') -->
+
+<!-- library(DiagrammeR) -->
+
+<!-- grViz(" -->
+<!-- digraph ms { -->
+<!--   graph [ -->
+<!--     rankdir = LR, -->
+<!--     nodesep = 0.35, -->
+<!--     ranksep = 0.55 -->
+<!--      label = < <B>Multi-state  Survival Model</B> >, -->
+<!--     labelloc = t, -->
+<!--     labeljust = c, -->
+<!--     fontsize = 20, -->
+<!--   ] -->
+
+<!--   node [ -->
+<!--     shape = box, -->
+<!--     style = filled, -->
+<!--     fillcolor = white, -->
+<!--     penwidth = 3, -->
+<!--     fontsize = 18 -->
+<!--   ] -->
+
+<!--   edge [ -->
+<!--     penwidth = 3, -->
+<!--     arrowsize = 1.2 -->
+<!--   ] -->
+
+<!--   A [label = 'Baseline (initial = 0)'] -->
+<!--   B [label = 'Progress (stage = 1)'] -->
+<!--   C [label = 'Death (stage = 2)'] -->
+
+<!--   { rank = same; A; B } -->
+<!--   { rank = same; C } -->
+
+<!--   A -> B -->
+<!--   A -> C -->
+<!--   B -> C -->
+<!-- } -->
+<!-- ") -->
+
+<!-- cat('</div>') -->
+<!-- ``` -->
+
+# GitHub
+The code and datasets for this project can be viewed at our GitHub repository here: <https://github.com/darshu-d/MSc-Research-project->
+
+# References
+<div class="callout"> <ul class="small"> <ol> <li>Neuhäuser, M. (2006). How to deal with multiple endpoints in clinical trials. *Fundamental & clinical pharmacology*, 20(6), 515-523.</li> <li>Pocock, S. J., et al. (2012). The win ratio: a new approach to the analysis of composite endpoints in clinical trials based on clinical priorities. *European heart journal*, 33(2), 176-182.</li> <li>Jackson, C. (2011). Multi-state models for panel data: the msm package for R. *Journal of statistical software*, 38, 1-28.</li> <li>Wang, L., et al. (2017, November). Multi-task survival analysis. In 2017 IEEE international conference on data mining (ICDM) (pp. 485-494). IEEE.</li> <li>Ascierto, P. A., et al. (2024). Sequential immunotherapy and targeted therapy for metastatic BRAF V600 mutated melanoma: 4-year survival and biomarkers evaluation from the phase II SECOMBIT trial. *Nature Communications*, 15(1), 146.</li> <li>Ascierto, P. A., et al. (2023). Sequencing of ipilimumab plus nivolumab and encorafenib plus binimetinib for untreated BRAF-mutated metastatic melanoma (SECOMBIT): a randomized, three-arm, open-label phase II trial. *Journal of Clinical Oncology*, 41(2), 212-221.</li></ol></ul> </div>
