@@ -305,9 +305,7 @@ summary(wr_ba)
 ```
 * This win-ratio analysis favours ARM B over ARM A with a clincially meaningful point estimate but lacks statistical significance.
 
-* Out of 4761 paired comparisons between Arms A and B (with 69 patients in each arm), ARM B **wins** 2289 pairs while ARM A wins 1541, with a win-ratio of 1.49 with 95% CI at 0.93 - 2.38 and a p-value of 0.00993.
-
-* Wide CI indicates limited power. 
+* Out of 4761 paired comparisons between Arms A and B (with 69 patients in each arm), ARM B **wins** 2289 pairs while ARM A wins 1541, with a win-ratio of 1.49 and a p-value of 0.0993.
 
 * Wins are more driven by OS (1733 Vs 1271) than PFS (556 Vs 270). This reflects ARM B's edge in both endpoints despite individual COX models with non-significant Hazard ratios.
 
@@ -334,7 +332,7 @@ summary(wr_ca)
 ```
 The win-ratio analysis show Arm C has a statistically significant advantage over Arm A, with a superior OS performance.
 
-* Out of 4692 paired comparisons between Arms C and A (with 68 patients in Arm C and 69 in Arm A), ARM C wins 2361 pairs while ARM A wins only 143, with a win-ratio of 1.58 with 95% CI at 1.00 - 2.51 and p-value is at 0.0508.
+* Out of 4692 paired comparisons between Arms C and A (with 68 patients in Arm C and 69 in Arm A), ARM C wins 2361 pairs while ARM A wins only 143, with a win-ratio of 1.58 and p-value is at 0.0508.
 
 * Strong OS contribution dominates with PFS also favouring ARM C. 
 
@@ -362,7 +360,7 @@ summary(wr_cb)
 ```
 * The win-ratio analysis show no meaningful advantage for Arm C over Arm B, with a near-neutral point estimate and no statistical significance.
 
-* Out of 4692 paired comparisons between Arms C and B (with 68 patients in Arm C and 69 in Arm B), ARM C wins 1646 pairs while ARM B wins 1562, with a win-ratio of 1.05 with 95% CI at 0.63 - 1.76 and p-value is at 0.8410.
+* Out of 4692 paired comparisons between Arms C and B (with 68 patients in Arm C and 69 in Arm B), ARM C wins 1646 pairs while ARM B wins 1562, with a win-ratio of 1.05 and p-value is at 0.8410.
 
 * OS wins are balanced and PFS slightly favours ARM C. 
 
