@@ -72,7 +72,9 @@ clean_df <- SECOMBIT %>%
 
 
 ```
-
+```{r}
+names(clean_df)
+```
 
 ```{r}
 # Numeric summary
@@ -137,7 +139,38 @@ sd_PFS = sd(pfs_status, na.rm = TRUE),
 
 arm_summary
 ```
+```{r}
+event_count <- clean_df %>%
+  group_by(Arm)  %>%
+  summarise(
+    OS_Events = sum(os_status == 1, na.rm = TRUE),
+    PFS_Events = sum(pfs_status == 1, na.rm = TRUE),
+    .groups = "drop"
+  )
+event_count
 
+event_long <- event_count %>%
+  pivot_longer(
+    cols = c(OS_Events, PFS_Events),
+    names_to = "Endpoint",
+    values_to = "Events"
+  )
+
+plot_events <- ggplot(event_long, aes(x = Arm, y = Events, fill = Endpoint)) +
+  geom_col (position = position_dodge(width = 0.7))+
+  labs(
+    title = "OS and PFS : Event Vs Arms",
+    x = "ARM",
+    y = "No. of events",
+    fill = "Endpoint",
+  ) +
+scale_fill_manual(values = c("OS_Events"  = "red", 
+                             "PFS_Events" = "blue"))+
+theme_minimal()
+
+ggplotly(plot_events)
+
+```
 ```{r}
 #Baseline variables
 
