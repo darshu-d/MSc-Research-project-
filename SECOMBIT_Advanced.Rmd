@@ -457,7 +457,7 @@ After multiple testing adjustment using Bonferroni, none of the win-ratio compar
 
 * Bonferroni correction for 3 comparisons appropriately controls arm-wise error but reduces power with approximately 68-69 patients in each arm
 
-* Unadjusted trends - Arm B and C both favor over Arm A but lacks confirmation
+* Unadjusted trends - Arm B and C both favor over Arm A but lacks confirmation.
 
 ```{r}
 # **NET BENEFIT**
@@ -481,6 +481,9 @@ nb_BA <- BuyseTest(
 summary(nb_BA)
 
 ```
+* Significant PFS contribution (p-value 0.031)
+
+* Global results reflects 22% net benefit for B with OS alone contributing for 13% with 8.6% from PFS. 
 
 ```{r}
 # C Vs A
@@ -500,6 +503,11 @@ nb_CA <- BuyseTest(
 summary(nb_CA)
 
 ```
+* Generalised pairwise comparisons for Arm C vs Arm A is similar to Arm B Vs Arm A.
+
+* Global net benefit :  0.2015 - Arm C beats Arm A by overall 20.15% with 13.23% contributed by the OS. 
+
+* Strong PFS signal noted (p=0.0499)
 
 ```{r}
 # C Vs B
@@ -520,6 +528,10 @@ nb_CB <- BuyseTest(
 summary(nb_CB)
 
 ```
+* Generalised pairwise comparisons confirm equivalence between Arms C and B with no net benefit.
+
+* OS contribution -1% net confirming long term survival, PFS -3.89% is clinically not significant.
+
 
 **Multi-state model**
 
