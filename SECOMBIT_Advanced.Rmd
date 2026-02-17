@@ -73,70 +73,6 @@ clean_df <- SECOMBIT %>%
 
 ```
 
-```{r}
-# #column names & trimws prevent name-matching errors
-# 
-# names(df) <- trimws(names(df))
-# names(df)
-# ```
-# ```{r}
-# #renaming
-# SECOMBIT <- SECOMBIT %>%
-#    rename(
-#      PFS.TOTAL   = "PFS.TOTAL",
-#      PROGR.TOTAL = "Progr.total"
-#    )
-# names(SECOMBIT)
-```
-
-```{r}
-# #converting variables ()
-# df$ARM <- factor(df$ARM)
-# df$sites <- factor(df$sites)
-# df$ULN_LDH <- factor(df$ULN_LDH)
-# df$TMB <- factor(df$TMB)
-# df$JAK <- factor(df$JAK)
-# df$PD <- factor(df$PD)
-```
-
-```{r}
-# #status
-# df$status_num <- readr::parse_number(as.character(df$status))
-# 
-# table(df$status_num, useNA = "ifany")  # you MUST see 1 and 2 here
-# 
-# df$status01 <- dplyr::case_when(
-#   df$status_num == 1 ~ 0,   # censored
-#   df$status_num == 2 ~ 1,   # event
-#   TRUE ~ NA_real_
-# )
-# 
-# table(df$status01, useNA = "ifany")   
-```
-# status01 is the event indicator used in survival analysis where:
-- 0 = censored (event not observed during follow-up)
-- 1 = event (e.g., death/progression depending on endpoint)
-
-```{r}
-# #Basic univariate exploration of numeric variables
-# 
-# df %>%
-#   select(where(is.numeric)) %>%
-#   summary()
-```
-#Provides minimum, maximum, quartiles, and mean values for numeric variables
-
-```{r}
-# Checking distribution of numeric variables
-
-# df %>%
-# select(where(is.numeric)) %>%
-# pivot_longer(cols = everything(), names_to = "variable", values_to = "value") %>%
-# ggplot(aes(x = value)) +
-# geom_histogram(bins = 30, fill = "skyblue", color = "black") +
-# facet_wrap(~variable, scales = "free_x")
-```
-#helps in assessing skewness, spread, and potential outliers.
 
 ```{r}
 # Numeric summary
@@ -262,7 +198,7 @@ knitr::kable(logrank_tab, format = "html", align = "lccc") |>
 
 ```
 
-#Inference - Survival curves and Cox Log-Rank tests
+**Inference - Survival curves and Cox Log-Rank tests**
 
 Survival curves and log‑rank tests
 The Kaplan–Meier curves for OS appear relatively close, and the log‑rank test p‑value around 0.25 suggests no statistically significant difference in overall survival across arms at this stage.

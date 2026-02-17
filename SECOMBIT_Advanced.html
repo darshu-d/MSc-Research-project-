@@ -2582,61 +2582,6 @@ clean_df &lt;- SECOMBIT %&gt;%
     
   ) %&gt;%
   select(id, Arm, Sites, LDH, TMB, JAK, pfs_time, pfs_status, os_time, os_status)</code></pre>
-<pre class="r"><code># #column names &amp; trimws prevent name-matching errors
-# 
-# names(df) &lt;- trimws(names(df))
-# names(df)
-# ```
-# ```{r}
-# #renaming
-# SECOMBIT &lt;- SECOMBIT %&gt;%
-#    rename(
-#      PFS.TOTAL   = &quot;PFS.TOTAL&quot;,
-#      PROGR.TOTAL = &quot;Progr.total&quot;
-#    )
-# names(SECOMBIT)</code></pre>
-<pre class="r"><code># #converting variables ()
-# df$ARM &lt;- factor(df$ARM)
-# df$sites &lt;- factor(df$sites)
-# df$ULN_LDH &lt;- factor(df$ULN_LDH)
-# df$TMB &lt;- factor(df$TMB)
-# df$JAK &lt;- factor(df$JAK)
-# df$PD &lt;- factor(df$PD)</code></pre>
-<pre class="r"><code># #status
-# df$status_num &lt;- readr::parse_number(as.character(df$status))
-# 
-# table(df$status_num, useNA = &quot;ifany&quot;)  # you MUST see 1 and 2 here
-# 
-# df$status01 &lt;- dplyr::case_when(
-#   df$status_num == 1 ~ 0,   # censored
-#   df$status_num == 2 ~ 1,   # event
-#   TRUE ~ NA_real_
-# )
-# 
-# table(df$status01, useNA = &quot;ifany&quot;)   </code></pre>
-<div id="status01-is-the-event-indicator-used-in-survival-analysis-where" class="section level1">
-<h1>status01 is the event indicator used in survival analysis
-where:</h1>
-<ul>
-<li>0 = censored (event not observed during follow-up)</li>
-<li>1 = event (e.g., death/progression depending on endpoint)</li>
-</ul>
-<pre class="r"><code># #Basic univariate exploration of numeric variables
-# 
-# df %&gt;%
-#   select(where(is.numeric)) %&gt;%
-#   summary()</code></pre>
-<p>#Provides minimum, maximum, quartiles, and mean values for numeric
-variables</p>
-<pre class="r"><code># Checking distribution of numeric variables
-
-# df %&gt;%
-# select(where(is.numeric)) %&gt;%
-# pivot_longer(cols = everything(), names_to = &quot;variable&quot;, values_to = &quot;value&quot;) %&gt;%
-# ggplot(aes(x = value)) +
-# geom_histogram(bins = 30, fill = &quot;skyblue&quot;, color = &quot;black&quot;) +
-# facet_wrap(~variable, scales = &quot;free_x&quot;)</code></pre>
-<p>#helps in assessing skewness, spread, and potential outliers.</p>
 <pre class="r"><code># Numeric summary
 
 numeric_summary &lt;- SECOMBIT %&gt;%
@@ -2828,8 +2773,8 @@ labels = c(&quot;Missing&quot;,&quot;Normal&quot;, &quot;Elevated&quot;)) +
 theme_minimal()
 
 ggplotly(mortality_plot)</code></pre>
-<div class="plotly html-widget html-fill-item" id="htmlwidget-daaf5885c8693384697c" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-daaf5885c8693384697c">{"x":{"data":[{"orientation":"v","width":[0.30000000000000004,0.30000000000000027,0.29999999999999982],"base":[0,0,0],"x":[0.69999999999999996,1.7,2.7000000000000002],"y":[41,41,48],"text":["count: 41<br />Arm: A<br />as.factor(LDH): Normal","count: 41<br />Arm: B<br />as.factor(LDH): Normal","count: 48<br />Arm: C<br />as.factor(LDH): Normal"],"type":"bar","textposition":"none","marker":{"autocolorscale":false,"color":"rgba(255,192,203,1)","line":{"width":1.8897637795275593,"color":"transparent"}},"name":"Normal","legendgroup":"Normal","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"orientation":"v","width":[0.29999999999999993,0.29999999999999982,0.29999999999999982],"base":[0,0,0],"x":[1,2,3],"y":[26,28,20],"text":["count: 26<br />Arm: A<br />as.factor(LDH): Elevated","count: 28<br />Arm: B<br />as.factor(LDH): Elevated","count: 20<br />Arm: C<br />as.factor(LDH): Elevated"],"type":"bar","textposition":"none","marker":{"autocolorscale":false,"color":"rgba(0,0,0,1)","line":{"width":1.8897637795275593,"color":"transparent"}},"name":"Elevated","legendgroup":"Elevated","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"orientation":"v","width":[0.29999999999999982,0.29999999999999982,0.29999999999999982],"base":[0,0,0],"x":[1.3,2.2999999999999998,3.2999999999999998],"y":[2,2,1],"text":["count:  2<br />Arm: A<br />as.factor(LDH): NA","count:  2<br />Arm: B<br />as.factor(LDH): NA","count:  1<br />Arm: C<br />as.factor(LDH): NA"],"type":"bar","textposition":"none","marker":{"autocolorscale":false,"color":"rgba(127,127,127,1)","line":{"width":1.8897637795275593,"color":"transparent"}},"name":"NA","legendgroup":"NA","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":40.840182648401829,"r":7.3059360730593621,"b":37.260273972602747,"l":37.260273972602747},"paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724},"title":{"text":"LDH levels by ARM","font":{"color":"rgba(0,0,0,1)","family":"","size":17.534246575342465},"x":0,"xref":"paper"},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[0.40000000000000002,3.6000000000000001],"tickmode":"array","ticktext":["A","B","C"],"tickvals":[1,2,3],"categoryorder":"array","categoryarray":["A","B","C"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.6529680365296811,"tickwidth":0,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.68949771689498},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(235,235,235,1)","gridwidth":0,"zeroline":false,"anchor":"y","title":{"text":"ARM","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-2.4000000000000004,50.399999999999999],"tickmode":"array","ticktext":["0","10","20","30","40","50"],"tickvals":[0,10,20,30,40,50],"categoryorder":"array","categoryarray":["0","10","20","30","40","50"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.6529680365296811,"tickwidth":0,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.68949771689498},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(235,235,235,1)","gridwidth":0,"zeroline":false,"anchor":"x","title":{"text":"Levels","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","layer":"below","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":true,"legend":{"bgcolor":null,"bordercolor":null,"borderwidth":0,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.68949771689498},"title":{"text":"LDH","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724}}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"source":"A","attrs":{"42e448b5658c":{"x":{},"fill":{},"type":"bar"}},"cur_data":"42e448b5658c","visdat":{"42e448b5658c":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-3dd3a285a89b184e5b96" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-3dd3a285a89b184e5b96">{"x":{"data":[{"orientation":"v","width":[0.30000000000000004,0.30000000000000027,0.29999999999999982],"base":[0,0,0],"x":[0.69999999999999996,1.7,2.7000000000000002],"y":[41,41,48],"text":["count: 41<br />Arm: A<br />as.factor(LDH): Normal","count: 41<br />Arm: B<br />as.factor(LDH): Normal","count: 48<br />Arm: C<br />as.factor(LDH): Normal"],"type":"bar","textposition":"none","marker":{"autocolorscale":false,"color":"rgba(255,192,203,1)","line":{"width":1.8897637795275593,"color":"transparent"}},"name":"Normal","legendgroup":"Normal","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"orientation":"v","width":[0.29999999999999993,0.29999999999999982,0.29999999999999982],"base":[0,0,0],"x":[1,2,3],"y":[26,28,20],"text":["count: 26<br />Arm: A<br />as.factor(LDH): Elevated","count: 28<br />Arm: B<br />as.factor(LDH): Elevated","count: 20<br />Arm: C<br />as.factor(LDH): Elevated"],"type":"bar","textposition":"none","marker":{"autocolorscale":false,"color":"rgba(0,0,0,1)","line":{"width":1.8897637795275593,"color":"transparent"}},"name":"Elevated","legendgroup":"Elevated","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"orientation":"v","width":[0.29999999999999982,0.29999999999999982,0.29999999999999982],"base":[0,0,0],"x":[1.3,2.2999999999999998,3.2999999999999998],"y":[2,2,1],"text":["count:  2<br />Arm: A<br />as.factor(LDH): NA","count:  2<br />Arm: B<br />as.factor(LDH): NA","count:  1<br />Arm: C<br />as.factor(LDH): NA"],"type":"bar","textposition":"none","marker":{"autocolorscale":false,"color":"rgba(127,127,127,1)","line":{"width":1.8897637795275593,"color":"transparent"}},"name":"NA","legendgroup":"NA","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":40.840182648401829,"r":7.3059360730593621,"b":37.260273972602747,"l":37.260273972602747},"paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724},"title":{"text":"LDH levels by ARM","font":{"color":"rgba(0,0,0,1)","family":"","size":17.534246575342465},"x":0,"xref":"paper"},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[0.40000000000000002,3.6000000000000001],"tickmode":"array","ticktext":["A","B","C"],"tickvals":[1,2,3],"categoryorder":"array","categoryarray":["A","B","C"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.6529680365296811,"tickwidth":0,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.68949771689498},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(235,235,235,1)","gridwidth":0,"zeroline":false,"anchor":"y","title":{"text":"ARM","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-2.4000000000000004,50.399999999999999],"tickmode":"array","ticktext":["0","10","20","30","40","50"],"tickvals":[0,10,20,30,40,50],"categoryorder":"array","categoryarray":["0","10","20","30","40","50"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.6529680365296811,"tickwidth":0,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.68949771689498},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(235,235,235,1)","gridwidth":0,"zeroline":false,"anchor":"x","title":{"text":"Levels","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","layer":"below","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":true,"legend":{"bgcolor":null,"bordercolor":null,"borderwidth":0,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.68949771689498},"title":{"text":"LDH","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724}}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"source":"A","attrs":{"189c28fa5745":{"x":{},"fill":{},"type":"bar"}},"cur_data":"189c28fa5745","visdat":{"189c28fa5745":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 <pre class="r"><code>#ARM-wise summary
 
 arm_summary &lt;- clean_df %&gt;%
@@ -2972,7 +2917,8 @@ PFS
 </tr>
 </tbody>
 </table>
-<p>#Inference - Survival curves and Cox Log-Rank tests</p>
+<p><strong>Inference - Survival curves and Cox Log-Rank
+tests</strong></p>
 <p>Survival curves and log‑rank tests The Kaplan–Meier curves for OS
 appear relatively close, and the log‑rank test p‑value around 0.25
 suggests no statistically significant difference in overall survival
@@ -3823,7 +3769,6 @@ summary_df</code></pre>
 ## 1    6 0.7164169 0.5999991 0.6599940 0.1536184 0.2280424 0.1645959
 ## 2   12 0.5132532 0.3599989 0.4355921 0.3587723 0.4822659 0.3931271
 ## 3   24 0.2634289 0.1295992 0.1897405 0.6616776 0.7977369 0.7184972</code></pre>
-</div>
 </div>
 
 
