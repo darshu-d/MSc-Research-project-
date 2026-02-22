@@ -198,7 +198,7 @@ ggsurvplot(
   risk.table = FALSE, pval = TRUE, conf.int = TRUE
 )
 ```
-```{r km-pfs, echo=FALSE, fig.height=2.2, fig.width=6, out.width="100%"}
+```{r}
 par(mar = c(3, 3, 1.1, 1))
 fit_pfs <- survfit(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
 
@@ -319,9 +319,10 @@ The low p-value clearly rejects proportional hazards for progression-free surviv
 
 This justifies moving beyond standard Cox to time-varying effects, stratified models, or multi-state approaches.
 
+
+```{r}
 #Win-ratio 
 ## B Vs A
-```{r}
 wr_ba <- winratio(id = "id",
                   trt = "Arm",
                   outcomes = list(
