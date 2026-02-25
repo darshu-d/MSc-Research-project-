@@ -616,6 +616,34 @@ pt_A_12
 pt_B_12
 pt_C_12
 ```
+**Arm A:**
+
+* If starting Stable, 51% remain stable, 12.8% progress and 35.9% die.
+
+* If starting Progression, 7.2% keeps progressing and 92.8% die.
+
+**Arm B:**
+
+* If starting Stable, 36% remain stable, 15.77% progress and 48.2% die.
+
+* If starting Progression, 10% keeps progressing and 89.93% die.
+
+**Arm C:**
+
+* If starting Stable, 44% remain stable, 17% progress and 39% die.
+
+* If starting Progression, 10% progress and 89.98% die.
+
+**Conclusion:**
+
+* Arm B has the largest probability of death and the lowest probability of remaining Stable. 
+
+* Transition from Progression to Death is almost similar across all the Arms.
+
+* This suggests treatment effect influence more before disease progression rather than after progression. 
+
+
+
 
 ```{r}
 probs_A <- sapply(times, function(t)
@@ -695,4 +723,11 @@ summary_df
 * Arm A performs better and Arm C still at intermediate.
 
 
-**_Conclusion_**
+**_Conclusion:_**
+
+* Arm A consistently shows better prognosis.
+
+* Arm B declines over time with poor prognosis.
+
+* Arm C is a sandwich between A and B.
+
