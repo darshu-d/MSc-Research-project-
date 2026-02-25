@@ -311,7 +311,7 @@ The PH test p-values indicate moderate violations of the proportional hazards as
 This borderline p-value suggests the proportional hazards assumption holds approximately for overall survival, but there's weak evidence against it.
 
 Hazard ratios from the Cox model remain reasonably interpretable, though caution is warranted; the curves may cross or diverge over time.
-​
+
 
 ** PFS model (p = 0.0119)**
 
@@ -579,6 +579,18 @@ msm_fit <- msm(
 summary(msm_fit)
 ```
 
+**Interpretation:**
+
+* Huge decline in number of patients in **Stable** over time.
+
+* Death increases over time.
+
+* Progression is the intermediate state between these two.
+
+Most patients transition from Stable to Death over time directly or via Progression state. Arm B shows higher HR of 2.56 from Stable to Death and the CI includes 1, which indicates no statistical significant effect on the treatment effect. No treatment arm shows significant impact on transition hazards.
+
+
+
 ```{r}
 # Probabilities from Stable at time t
 pt <- pmatrix.msm(msm_fit, t = 12)   # e.g., 12 months
@@ -663,3 +675,24 @@ summary_df <- data.frame(
 
 summary_df
 ```
+
+**At Time = 6:**
+
+* Arm A has highest probability of remaining stable (~72%).
+
+* Arm B has the lowest probability of remaining stable (~60%) and death is higher in this arm (~23%).
+
+**At Time = 12:**
+
+* Probability of remaining stable has reduced from 59% to 36% in Arm B.
+
+* Still Arm A performs best with Arm C at intermediate.
+
+**At Time = 24:**
+
+* In Arm B, the probability of being Stable declined further to 12.9%
+
+* Arm A performs better and Arm C still at intermediate.
+
+
+**_Conclusion_**
