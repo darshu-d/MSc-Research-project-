@@ -84,9 +84,13 @@ summarise(
 mean_OS    = mean(OS, na.rm = TRUE),
 sd_OS      = sd(OS, na.rm = TRUE),
 median_OS  = median(OS, na.rm = TRUE),
+min_OS     = min(OS, na.rm = TRUE),
+max_OS     = max(OS, na.rm = TRUE),
 mean_PFS   = mean(`PFS TOTAL`, na.rm = TRUE),
 sd_PFS     = sd(`PFS TOTAL`, na.rm = TRUE),
-median_PFS = median(`PFS TOTAL`, na.rm = TRUE)
+median_PFS = median(`PFS TOTAL`, na.rm = TRUE),
+min_PFS    = min(`PFS TOTAL`, na.rm = TRUE),
+max_PFS    = max(`PFS TOTAL`, na.rm =TRUE)
 )
 
 numeric_summary
@@ -327,6 +331,7 @@ clean_df$pfs_composite <- ifelse(clean_df$pfs_status == 1 | clean_df$os_status =
 table1( ~pfs_composite + pfs_time | Arm, data = clean_df)
 
 ```
+
 
 ```{r}
 #Win-ratio 
@@ -600,18 +605,19 @@ Most patients transition from Stable to Death over time directly or via Progress
 
 
 ```{r}
+## Section: 7.5    Transition probabilities
+##################################################
 # Probabilities from Stable at time t
 pt <- pmatrix.msm(msm_fit, t = 12)   # e.g., 12 months
 pt
 
 # Example: plot transition probabilities from Stable over time
-times <- seq(0, 24, by = 1)  # 0–24 months
+times <- seq(0, 72, by = 1) 
 probs <- sapply(times, function(t) pmatrix.msm(msm_fit, t = t)[1, ])
 matplot(times, t(probs), type = "l", lty = 1, col = 1:3,
         xlab = "Time (months)", ylab = "Probability",
         main = "State occupation probabilities from Stable")
 legend("topright", legend = states, col = 1:3, lty = 1)
-
 ```
 
 
@@ -663,6 +669,7 @@ probs_B <- sapply(times, function(t)
 probs_C <- sapply(times, function(t)
   pmatrix.msm(msm_fit, t = t, covariates = list(Arm = "C"))[1, ])
 
+
 ```
 
 ```{r}
@@ -699,18 +706,38 @@ legend("topleft",
 ```
 
 ```{r}
+
+timeline <- seq(6,72, by = 6)
 summary_df <- data.frame(
-  Time = c(6, 12, 24),
-  Stable_A = probs_A[1, times %in% c(6,12,24)],
-  Stable_B = probs_B[1, times %in% c(6,12,24)],
-  Stable_C = probs_C[1, times %in% c(6,12,24)],
-  Death_A  = probs_A[3, times %in% c(6,12,24)],
-  Death_B  = probs_B[3, times %in% c(6,12,24)],
-  Death_C  = probs_C[3, times %in% c(6,12,24)]
+  Time = timeline,
+  Stable_A = round(probs_A[1, match(timeline, times)],2),
+  Stable_B = round(probs_B[1, match(timeline, times)],2),
+  Stable_C = round(probs_C[1, match(timeline, times)],2),
+  Death_A  = round(probs_A[3, match(timeline, times)],2),
+  Death_B  = round(probs_B[3, match(timeline, times)],2),
+  Death_C  = round(probs_C[3, match(timeline, times)],2)
 )
 
 summary_df
 ```
+
+**Summary:**
+
+* At the end of 6 months, Arm A has the highest probability of remaining stable(71%), following by Arm C (66%) and Arm B at 60%. Higher deaths are noted in Arm B (22%) and Arm A and Arm B shows less probability of deaths about 15% and 16%.
+
+* There is a faster decline in probability of being stable in Arm B, which is followed by Arm C. Arm A shows slow decline in the probability of being stable over time.
+
+* Only about 8% of probability of being stable was around 30 months in Arm B, where it was 19% in Arm A and 13% in Arm C. Arm A was still found to be superior.
+
+* Arm A consistently shows highest probability of remaining Stable over time and lowest probability of Death at every time point.
+
+* Arm B performs worst with rapid decline in probability of remaining Stable and highest mortality rate over time.
+
+* Arm C shows intermediate outcomes between Arm A and Arm B.
+
+
+
+
 
 **At Time = 6:**
 
@@ -729,6 +756,40 @@ summary_df
 * In Arm B, the probability of being Stable declined further to 12.9%
 
 * Arm A performs better and Arm C still at intermediate.
+
+**At Time = 30:**
+
+* Arm A still performs better (18.8%) than Arm B and C.
+
+* 
+
+**At Time = 36:**
+
+
+**At Time = 42:**
+
+
+**At Time = 48:**
+
+
+
+**At Time = 54:**
+
+
+
+**At Time = 60:**
+
+
+
+**At Time = 66:**
+
+
+
+
+**At Time = 72:**
+
+
+
 
 
 **_Conclusion:_**
