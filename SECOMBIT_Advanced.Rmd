@@ -319,6 +319,14 @@ The low p-value clearly rejects proportional hazards for progression-free surviv
 
 This justifies moving beyond standard Cox to time-varying effects, stratified models, or multi-state approaches.
 
+**Composite Outcomes**
+
+```{r}
+clean_df$pfs_composite <- ifelse(clean_df$pfs_status == 1 | clean_df$os_status == 1, 1,0)
+
+table1( ~pfs_composite + pfs_time | Arm, data = clean_df)
+
+```
 
 ```{r}
 #Win-ratio 
