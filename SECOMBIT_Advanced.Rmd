@@ -326,9 +326,17 @@ This justifies moving beyond standard Cox to time-varying effects, stratified mo
 **Composite Outcomes**
 
 ```{r}
-clean_df$pfs_composite <- ifelse(clean_df$pfs_status == 1 | clean_df$os_status == 1, 1,0)
 
-table1( ~pfs_composite + pfs_time | Arm, data = clean_df)
+#Composite Outcomes
+
+#clean_df$pfs_composite <- ifelse(clean_df$pfs_status == 1 | clean_df$os_status == 1, 1,0)
+
+#table1( ~pfs_composite + pfs_time | Arm, data = clean_df)
+
+ clean_df$comp_status = ifelse(clean_df$os_status == 1 | clean_df$pfs_status == 1, 1, 0)
+ clean_df$comp_time = pmin(clean_df$os_time, clean_df$pfs_time, na.rm = TRUE)
+ 
+ table1(~comp_status + comp_time | Arm, data = clean_df)
 
 ```
 
