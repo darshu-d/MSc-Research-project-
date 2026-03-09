@@ -1,13 +1,20 @@
 ---
-title: "SECOMBIT Study - Data exploration"
-output:
-  html_document: default
-  word_document: default
-date: "2025-11-24"
----
+title: "Methods for Handling Multiple Outcomes in Health Data"
+subtitle: 'SECOMBIT Study'
+author: "Sivakamakshi Muthu Kumarasamy, Shivadarshini Sreekanth"
+output: 
+  rmdformats::readthedown:
+    self_contained: true
+    highlight: "default"
+    thumbnails: false
+    fig_width: 7
+    fig_height: 5
+    toc_depth: 3
 
-```{r setup, message=FALSE, warning=FALSE}
+---
 #libraries
+```{r setup, message=FALSE, warning=FALSE}
+
 
 library(dplyr)
 library(ggplot2)
@@ -75,9 +82,9 @@ clean_df <- SECOMBIT %>%
 ```{r}
 names(clean_df)
 ```
+## Numeric summary
 
 ```{r}
-# Numeric summary
 
 numeric_summary <- SECOMBIT %>%
 summarise(
@@ -95,9 +102,9 @@ max_PFS    = max(`PFS TOTAL`, na.rm =TRUE)
 
 numeric_summary
 ```
+## Summary statistics for categorical variables
 
 ```{r}
-#Summary statistics for categorical variables
 
 label(clean_df$Sites) <- "Sites"
 label(clean_df$LDH)   <- "LDH"
@@ -126,10 +133,9 @@ theme_minimal()
 
 ggplotly(mortality_plot)
 ```
+## ARM-wise summary
 
 ```{r}
-#ARM-wise summary
-
 arm_summary <- clean_df %>%
 group_by(Arm) %>%
 summarise(
@@ -174,10 +180,11 @@ theme_minimal()
 
 ggplotly(plot_events)
 
-```
-```{r}
-#Baseline variables
 
+```
+## Baseline variables
+
+```{r}
 vars <- c("Sites", "LDH", "TMB", "JAK", "os_status", "pfs_status")
 factorVars <- c("Sites", "LDH", "TMB", "JAK")
 
@@ -190,21 +197,17 @@ factorVars = factorVars
 
 print(tab1, showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE)
 ```
-**Composite Outcomes**
+## **Composite Outcomes**
 
 ```{r}
-
-#Composite Outcomes
-
 clean_df$comp_status = ifelse(clean_df$os_status == 1 | clean_df$pfs_status == 1, 1, 0)
 clean_df$comp_time = pmin(clean_df$os_time, clean_df$pfs_time, na.rm = TRUE)
  
 table1(~comp_status + comp_time | Arm, data = clean_df)
 
 ```
-
+## Binary outcome
 ```{r}
-#Binary outcome
 
 clean_df <- clean_df %>%
   mutate(
@@ -219,6 +222,8 @@ table(clean_df$binary_os, clean_df$Arm)
 table(clean_df$binary_pfs, clean_df$Arm)
 table(clean_df$binary_comp, clean_df$Arm)
 ```
+
+## Logistic Regression
 ```{r}
 log_os <- glm(binary_os ~ Arm + Sites + LDH + TMB + JAK, family = binomial, data = clean_df)
 
@@ -247,6 +252,11 @@ tidy_logistic(log_pfs, "Logistic — OS Event")
 cat("<br>")
 tidy_logistic(log_comp, "Logistic — Composite Event")
 ```
+
+## Univariate Analysis
+
+## KM Plot - OS and PFS
+
 ```{r}
 par(mar = c(3, 3, 1.1, 1))
 fit_os <- survfit(Surv(os_time, os_status) ~ Arm, data = clean_df)
@@ -270,8 +280,9 @@ ggsurvplot(
 ) 
 ```
 
+## LogRank test - OS and PFS
 ```{r}
-#LogRank test
+
 
 logrank_os  <- survdiff(Surv(os_time, os_status) ~ Arm, data = clean_df)
 logrank_pfs <- survdiff(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
@@ -297,10 +308,11 @@ Survival curves and log‑rank tests
 The Kaplan–Meier curves for OS appear relatively close, and the log‑rank test p‑value around 0.25 suggests no statistically significant difference in overall survival across arms at this stage.
 
 The PFS curves separate more clearly, with a log‑rank p‑value near 0.02, indicating evidence that at least one arm differs in progression‑free survival, consistent with SECOMBIT reports that sequencing can affect progression endpoints.
+
+## Cox proportional Hazards model - OS and PFS
+
+
 ```{r}
-#Cox proportional Hazards model
-
-
 library(broom)
 
 cox_os  <- coxph(Surv(os_time, os_status) ~ Arm + Sites + LDH + TMB + JAK,
@@ -331,13 +343,13 @@ tidy_cox(cox_pfs, "Cox model — Progression-Free Survival (PFS)")
 ```
 The multivariable Cox proportional hazards model showed no statistically significant associations between the examined covariates and survival outcome (both OS and PFS). All variables had hazard ratios with 95% confidence intervals that included 1.0 and p-values exceeding 0.05.
 
-#COX Model for OS
+**COX Model for OS:**
 
 In the Cox model for OS, the hazard ratios for Arm B and Arm C versus Arm A are close to 1 with wide confidence intervals and non‑significant p‑values, suggesting no clear survival advantage yet for any single sequencing strategy.
 
 Some baseline factors, such as number of metastatic sites and LDH elevation, typically show increased mortality risk in melanoma trials, so if their HRs are above 1 with low p‑values, this aligns with prior evidence that greater tumour burden and elevated LDH are adverse prognostic markers.
 
-#COX Model for PFS
+**COX Model for PFS:**
 
 The Cox model results for progression‑free survival show no statistically significant effects for treatment arms or most covariates, though JAK mutation and Arm B trends toward better outcomes.
 
@@ -379,10 +391,8 @@ The low p-value clearly rejects proportional hazards for progression-free surviv
 
 This justifies moving beyond standard Cox to time-varying effects, stratified models, or multi-state approaches.
 
-
+##KM plot for composite outcome
 ```{r}
-#KM plot for composite outcome
-
 par(mar = c(3, 3, 1.1, 1))
 fit_comp <- survfit(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
 
@@ -394,9 +404,11 @@ ggsurvplot(
   legend.title = "Arm", legend.labs = levels(clean_df$Arm)
 )
 ```
-```{r}
+
+
 #LogRank test - Composite Outcome
 
+```{r}
 logrank_comp  <- survdiff(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
 
 p_comp  <- 1 - pchisq(logrank_comp$chisq,  df = length(logrank_comp$n)  - 1)
@@ -413,10 +425,9 @@ knitr::kable(logrank_tab, format = "html", align = "lccc") |>
   kableExtra::kable_styling(full_width = TRUE, font_size = 16)
 
 ```
+
+##Cox proportional Hazards model - Composite Outcome
 ```{r}
-#Cox proportional Hazards model
-
-
 library(broom)
 
 cox_comp  <- coxph(Surv(comp_time, comp_status) ~ Arm + Sites + LDH + TMB + JAK,
@@ -441,6 +452,7 @@ tidy_cox_comp(cox_comp,  "Cox model — Composite Outcome")
 cat("<br>")
 ```
 
+
 ```{r}
 ph_comp  <- cox.zph(cox_comp)
 
@@ -454,9 +466,10 @@ knitr::kable(ph_tab, format="html") |>
 
 ```
 
-```{r}
-#Win-ratio 
+## Win-ratio
+
 ## B Vs A
+```{r}
 wr_ba <- winratio(id = "id",
                   trt = "Arm",
                   outcomes = list(
@@ -537,8 +550,9 @@ summary(wr_cb)
 * Both Arm B and C outperform A without any clear superiority between them.
 
 
+## Adjusted p-values for multiple testing
+
 ```{r}
-#Adjusted p-values for multiple testing
 
 pvals <- c(
   "B_vs_A" = wr_ba$p.value,
@@ -561,10 +575,10 @@ After multiple testing adjustment using Bonferroni, none of the win-ratio compar
 
 * Unadjusted trends - Arm B and C both favor over Arm A but lacks confirmation.
 
-```{r}
-# **NET BENEFIT**
+## NET BENEFIT
 # B Vs A
 
+```{r}
 nb_df_BA <- clean_df %>%
   filter(Arm %in% c("A","B")) %>%
   filter(!is.na(os_time) | !is.na(pfs_time)) %>%   # keep if at least one endpoint present
@@ -587,8 +601,10 @@ summary(nb_BA)
 
 * Global results reflects 22% net benefit for B with OS alone contributing for 13% with 8.6% from PFS. 
 
+## C Vs A
+
 ```{r}
-# C Vs A
+
 nb_df_CA <- clean_df %>%
   filter(Arm %in% c("A","C")) %>%
   filter(!is.na(os_time) | !is.na(pfs_time)) %>%
@@ -611,9 +627,8 @@ summary(nb_CA)
 
 * Strong PFS signal noted (p=0.0499)
 
+## C Vs B
 ```{r}
-# C Vs B
-
 nb_df_CB <- clean_df %>%
   filter(Arm %in% c("B","C")) %>%
   filter(!is.na(os_time) | !is.na(pfs_time)) %>%
@@ -635,7 +650,7 @@ summary(nb_CB)
 * OS contribution -1% net confirming long term survival, PFS -3.89% is clinically not significant.
 
 
-**Multi-state model**
+##**Multi-state model**
 
 State 1: Stable
 State 2: Progression
@@ -659,10 +674,10 @@ Q["Progression","Death"]  <- 0.1
 
 ```
 
-
+### Prepare data in msm long format
 ```{r}
 
-# Prepare data in msm long format
+
 
 msm_df <- clean_df %>%
   select(id, Arm, os_time, os_status, pfs_time, pfs_status) %>%
@@ -695,10 +710,8 @@ msm_df <- clean_df %>%
 
 ```
 
-
+##Multi-state  model
 ```{r}
-#Multi-state  model
-
 # Arm as covariate affecting all transitions
 msm_fit <- msm(
   state ~ time,
@@ -724,11 +737,10 @@ summary(msm_fit)
 Most patients transition from Stable to Death over time directly or via Progression state. Arm B shows higher HR of 2.56 from Stable to Death and the CI includes 1, which indicates no statistical significant effect on the treatment effect. No treatment arm shows significant impact on transition hazards.
 
 
-
-```{r}
-## Section: 7.5    Transition probabilities
+##Transition probabilities
 ##################################################
 # Probabilities from Stable at time t
+```{r}
 pt <- pmatrix.msm(msm_fit, t = 12)   # e.g., 12 months
 pt
 
@@ -792,10 +804,9 @@ probs_C <- sapply(times, function(t)
 
 
 ```
-
+##Plots - Probability of remaining Stable by Treatment
 ```{r}
-#Plots
-#Probability of remaining Stable by Treatment
+
 plot(times, probs_A[1,], type = "l", lwd = 2,
      ylim = c(0,1),
      xlab = "Time (months)",
@@ -808,9 +819,10 @@ lines(times, probs_C[1,], lwd = 2, lty = 3)
 legend("topright",
        legend = c("Arm A", "Arm B", "Arm C"),
        lty = c(1,2,3), lwd = 2)
-
+```
 
 #Cumulative probability of Death by Treatment
+```{r}
 plot(times, probs_A[3,], type = "l", lwd = 2,
      ylim = c(0,1),
      xlab = "Time (months)",
