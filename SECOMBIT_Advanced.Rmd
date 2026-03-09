@@ -190,7 +190,63 @@ factorVars = factorVars
 
 print(tab1, showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE)
 ```
+**Composite Outcomes**
 
+```{r}
+
+#Composite Outcomes
+
+clean_df$comp_status = ifelse(clean_df$os_status == 1 | clean_df$pfs_status == 1, 1, 0)
+clean_df$comp_time = pmin(clean_df$os_time, clean_df$pfs_time, na.rm = TRUE)
+ 
+table1(~comp_status + comp_time | Arm, data = clean_df)
+
+```
+
+```{r}
+#Binary outcome
+
+clean_df <- clean_df %>%
+  mutate(
+    binary_os = os_status,
+    binary_pfs = pfs_status,
+    binary_comp = comp_status
+  ) %>%
+  mutate(across(c(binary_os, binary_pfs, binary_comp), ~factor (.x, labels = c("No Event", "Event"))))
+
+
+table(clean_df$binary_os, clean_df$Arm)
+table(clean_df$binary_pfs, clean_df$Arm)
+table(clean_df$binary_comp, clean_df$Arm)
+```
+```{r}
+log_os <- glm(binary_os ~ Arm + Sites + LDH + TMB + JAK, family = binomial, data = clean_df)
+
+log_pfs <- glm(binary_pfs ~ Arm + Sites + LDH + TMB + JAK, family = binomial, data = clean_df)
+
+log_comp <- glm(binary_comp ~ Arm + Sites + LDH + TMB + JAK, family = binomial, data = clean_df)
+
+tidy_logistic <- function(fit, title){
+  broom::tidy(fit, exponentiate = TRUE, conf.int = TRUE) |>
+    mutate(
+      OR_CI = sprintf("%.2f (%.2f–%.2f)", estimate, conf.low, conf.high),
+      p = signif(p.value, 3)
+    ) |>
+    select(term, OR_CI, p) |>
+    rename(Variable = term, `OR (95% CI)` = OR_CI, `p-value` = p) |>
+    (function(df){
+      cat(paste0("<b>", title, "</b>"))
+      knitr::kable(df, format = "html", escape = FALSE) |>
+        kableExtra::kable_styling(full_width = TRUE, font_size = 18)
+    })()
+}
+
+tidy_logistic(log_os, "Logistic — PFS Event")
+cat("<br>")
+tidy_logistic(log_pfs, "Logistic — OS Event") 
+cat("<br>")
+tidy_logistic(log_comp, "Logistic — Composite Event")
+```
 ```{r}
 par(mar = c(3, 3, 1.1, 1))
 fit_os <- survfit(Surv(os_time, os_status) ~ Arm, data = clean_df)
@@ -323,23 +379,80 @@ The low p-value clearly rejects proportional hazards for progression-free surviv
 
 This justifies moving beyond standard Cox to time-varying effects, stratified models, or multi-state approaches.
 
-**Composite Outcomes**
 
 ```{r}
+#KM plot for composite outcome
 
-#Composite Outcomes
+par(mar = c(3, 3, 1.1, 1))
+fit_comp <- survfit(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
 
-#clean_df$pfs_composite <- ifelse(clean_df$pfs_status == 1 | clean_df$os_status == 1, 1,0)
+ggsurvplot(
+  fit_comp, data = clean_df,
+  xlab = "Time (months)", ylab = "Survival probability",
+  title = "Composite Outcome",
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE,
+  legend.title = "Arm", legend.labs = levels(clean_df$Arm)
+)
+```
+```{r}
+#LogRank test - Composite Outcome
 
-#table1( ~pfs_composite + pfs_time | Arm, data = clean_df)
+logrank_comp  <- survdiff(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
 
- clean_df$comp_status = ifelse(clean_df$os_status == 1 | clean_df$pfs_status == 1, 1, 0)
- clean_df$comp_time = pmin(clean_df$os_time, clean_df$pfs_time, na.rm = TRUE)
- 
- table1(~comp_status + comp_time | Arm, data = clean_df)
+p_comp  <- 1 - pchisq(logrank_comp$chisq,  df = length(logrank_comp$n)  - 1)
+
+
+logrank_tab <- data.frame(
+  Endpoint = "Composite Outcome",
+  `Chi-square` = round((logrank_comp$chisq), 2),
+  df = length(logrank_comp$n)-1,
+  `p-value` = signif(p_comp, 3)
+)
+
+knitr::kable(logrank_tab, format = "html", align = "lccc") |>
+  kableExtra::kable_styling(full_width = TRUE, font_size = 16)
 
 ```
+```{r}
+#Cox proportional Hazards model
 
+
+library(broom)
+
+cox_comp  <- coxph(Surv(comp_time, comp_status) ~ Arm + Sites + LDH + TMB + JAK,
+                 data = clean_df, ties = "efron")
+
+tidy_cox_comp <- function(fit, title){
+  broom::tidy(fit, exponentiate = TRUE, conf.int = TRUE) |>
+    mutate(
+      HR_CI_comp = sprintf("%.2f (%.2f–%.2f)", estimate, conf.low, conf.high),
+      p = signif(p.value, 3)
+    ) |>
+    select(term, HR_CI_comp, p) |>
+    rename(Variable = term, `HR (95% CI)` = HR_CI_comp, `p-value` = p) |>
+    (\(df){
+      cat(paste0("<b>", title, "</b>"))
+      knitr::kable(df, format="html", escape=TRUE) |>
+        kableExtra::kable_styling(full_width=TRUE, font_size=18)
+    })()
+}
+
+tidy_cox_comp(cox_comp,  "Cox model — Composite Outcome")
+cat("<br>")
+```
+
+```{r}
+ph_comp  <- cox.zph(cox_comp)
+
+ph_tab <- data.frame(
+  Endpoint = "Composite outcome",
+  `PH test p-value` = signif((ph_comp$table["GLOBAL","p"]),3)
+)
+
+knitr::kable(ph_tab, format="html") |>
+  kableExtra::kable_styling(full_width=TRUE, font_size=18)
+
+```
 
 ```{r}
 #Win-ratio 
