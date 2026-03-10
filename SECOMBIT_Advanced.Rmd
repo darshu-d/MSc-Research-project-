@@ -246,11 +246,72 @@ tidy_logistic <- function(fit, title){
     })()
 }
 
-tidy_logistic(log_os, "Logistic — PFS Event")
+tidy_logistic(log_os, "Logistic — OS Event")
 cat("<br>")
-tidy_logistic(log_pfs, "Logistic — OS Event") 
+tidy_logistic(log_pfs, "Logistic — PFS Event") 
 cat("<br>")
 tidy_logistic(log_comp, "Logistic — Composite Event")
+```
+
+## Logistic Regression and COX for ARM
+
+```{r}
+log_os_arm <- glm(binary_os ~ Arm, family = binomial, data = clean_df)
+
+log_pfs_arm <- glm(binary_pfs ~ Arm, family = binomial, data = clean_df)
+
+log_comp_arm <- glm(binary_comp ~ Arm, family = binomial, data = clean_df)
+
+tidy_logistic <- function(fit, title){
+  broom::tidy(fit, exponentiate = TRUE, conf.int = TRUE) |>
+    mutate(
+      OR_CI = sprintf("%.2f (%.2f–%.2f)", estimate, conf.low, conf.high),
+      p = signif(p.value, 3)
+    ) |>
+    select(term, OR_CI, p) |>
+    rename(Variable = term, `OR (95% CI)` = OR_CI, `p-value` = p) |>
+    (function(df){
+      cat(paste0("<b>", title, "</b>"))
+      knitr::kable(df, format = "html", escape = FALSE) |>
+        kableExtra::kable_styling(full_width = TRUE, font_size = 18)
+    })()
+}
+
+tidy_logistic(log_os_arm, "Logistic — OS Event by ARM")
+cat("<br>")
+tidy_logistic(log_pfs_arm, "Logistic — PFS Event by ARM") 
+cat("<br>")
+tidy_logistic(log_comp_arm, "Logistic — Composite Event by ARM")
+```
+```{r}
+cox_os_arm  <- coxph(Surv(os_time, os_status) ~ Arm,
+                 data = clean_df, ties = "efron")
+cox_pfs_arm <- coxph(Surv(pfs_time, pfs_status) ~ Arm,
+                 data = clean_df, ties = "efron")
+
+cox_comp_arm <- coxph(Surv(comp_time, os_status) ~ Arm,
+                  data = clean_df, ties = "efron")
+
+tidy_cox <- function(fit, title){
+  broom::tidy(fit, exponentiate = TRUE, conf.int = TRUE) |>
+    mutate(
+      HR_CI = sprintf("%.2f (%.2f–%.2f)", estimate, conf.low, conf.high),
+      p = signif(p.value, 3)
+    ) |>
+    select(term, HR_CI, p) |>
+    rename(Variable = term, `HR (95% CI)` = HR_CI, `p-value` = p) |>
+    (\(df){
+      cat(paste0("<b>", title, "</b>"))
+      knitr::kable(df, format="html", escape=TRUE) |>
+        kableExtra::kable_styling(full_width=TRUE, font_size=18)
+    })()
+}
+
+tidy_cox(cox_os_arm,  "Cox model — Overall Survival (OS) by ARM")
+cat("<br>")
+tidy_cox(cox_pfs_arm, "Cox model — Progression-Free Survival (PFS) by ARM")
+
+
 ```
 
 ## Univariate Analysis
