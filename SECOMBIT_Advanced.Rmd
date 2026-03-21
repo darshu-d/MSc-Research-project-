@@ -538,10 +538,14 @@ wr_ba <- winratio(id = "id",
                     outc2 = c("pfs_status", "s", "pfs_time")
                   ),
                   fu = "os_time",
-                  data = clean_df %>% filter(Arm != "C") %>%
-                    filter(!is.na(pfs_time)| !is.na(os_time)) %>%
-                    mutate(pfs_time = round(pfs_time, 1),
-                           os_time = round(os_time, 1))
+                  data = clean_df %>% 
+                    filter(Arm %in% c("A", "B"))%>%
+                    filter(!is.na(os_time) & !is.na(os_status),
+                           !is.na(pfs_time) & !is.na(pfs_status)) %>%
+                    mutate(
+      pfs_time = pmin(pfs_time, os_time),
+      pfs_status = ifelse(os_status == 1 & pfs_time == os_time, 1, pfs_status)
+    )
 )
 summary(wr_ba)
 ```
@@ -565,9 +569,13 @@ wr_ca <- winratio(id = "id",
                   ),
                   fu = "os_time",
                   data = clean_df %>% filter(Arm != "B") %>%
-                    filter(!is.na(pfs_time)| !is.na(os_time)) %>%
-                    mutate(pfs_time = round(pfs_time, 1),
-                           os_time = round(os_time, 1))
+                    filter(Arm %in% c("C", "A")) %>%
+                    filter(!is.na(os_time), !is.na(os_status),
+                           !is.na(pfs_time), !is.na(pfs_status)) %>%
+                    mutate(
+                      pfs_time = pmin(pfs_time, os_time),
+                      pfs_status = ifelse(os_status == 1 & pfs_time == os_time, 1, pfs_status)
+    )
 )
 
 summary(wr_ca)
@@ -592,10 +600,14 @@ wr_cb <- winratio(id = "id",
                     outc2 = c("pfs_status", "s", "pfs_time")
                   ),
                   fu = "os_time",
-                  data = clean_df %>% filter(Arm != "A") %>%
-                    filter(!is.na(pfs_time)| !is.na(os_time)) %>%
-                    mutate(pfs_time = round(pfs_time, 1),
-                           os_time = round(os_time, 1))
+                  data = clean_df %>%
+                    filter(Arm %in% c("C", "B")) %>%
+                    filter(!is.na(os_time), !is.na(os_status),
+                           !is.na(pfs_time), !is.na(pfs_status)) %>%
+                    mutate(
+                      pfs_time = pmin(pfs_time, os_time),
+                      pfs_status = ifelse(os_status == 1 & pfs_time == os_time, 1, pfs_status)
+    )
 )
 
 summary(wr_cb)
