@@ -549,9 +549,9 @@ wr_ba <- winratio(id = "id",
 )
 summary(wr_ba)
 ```
-* This win-ratio analysis favours ARM B over ARM A with a clincially meaningful point estimate but lacks statistical significance.
+* This win-ratio analysis favours ARM B over ARM A with a clinically meaningful point estimate but lacks statistical significance.
 
-* Out of 4761 paired comparisons between Arms A and B (with 69 patients in each arm), ARM B **wins** 2289 pairs while ARM A wins 1541, with a win-ratio of 1.49 and a p-value of 0.0993.
+* Out of 4761 paired comparisons between Arms A and B (with 69 patients in each arm), ARM B **wins** 2289 pairs while ARM A wins 1541, with a win-ratio of 1.49 and a p-value of 0.0997.
 
 * Wins are more driven by OS (1733 Vs 1271) than PFS (556 Vs 270). This reflects ARM B's edge in both endpoints despite individual COX models with non-significant Hazard ratios.
 
@@ -580,15 +580,15 @@ wr_ca <- winratio(id = "id",
 
 summary(wr_ca)
 ```
-The win-ratio analysis show Arm C has a statistically significant advantage over Arm A, with a superior OS performance.
+The win-ratio analysis show Arm C has a statistically near-significant advantage over Arm A, with a superior performance across OS and PFS.
 
-* Out of 4692 paired comparisons between Arms C and A (with 68 patients in Arm C and 69 in Arm A), ARM C wins 2361 pairs while ARM A wins only 143, with a win-ratio of 1.58 and p-value is at 0.0508.
+* Out of 4692 paired comparisons between Arms C and A (with 68 patients in Arm C and 69 in Arm A), ARM C wins 2362 pairs while ARM A wins only 1489, with a win-ratio of 1.59 and p-value is at 0.0503.
 
-* Strong OS contribution dominates with PFS also favouring ARM C. 
+* Strong OS contribution (1850 Vs 1347) dominates, with PFS also favouring ARM C. 
 
-* Few ties than other analyses sharpen the signal.
+* Few ties (841) than other analyses sharpen the signal.
 
-* Both Arm C and A show no benefit over control, with Arm C has nominal significance despite similar sample sizes.
+* Both Arm C and A trend toward benefit over Arm A, with Arm C has nominal significance despite similar sample sizes.
 
 ## C Vs B
 ```{r}
@@ -614,9 +614,9 @@ summary(wr_cb)
 ```
 * The win-ratio analysis show no meaningful advantage for Arm C over Arm B, with a near-neutral point estimate and no statistical significance.
 
-* Out of 4692 paired comparisons between Arms C and B (with 68 patients in Arm C and 69 in Arm B), ARM C wins 1646 pairs while ARM B wins 1562, with a win-ratio of 1.05 and p-value is at 0.8410.
+* Out of 4692 paired comparisons between Arms C and B (with 68 patients in Arm C and 69 in Arm B), ARM C wins 1647 pairs while ARM B wins 1561, with a win-ratio of 1.06 and p-value is at 0.8372.
 
-* OS wins are balanced and PFS slightly favours ARM C. 
+* OS wins are balanced with PFS slightly favouring ARM C. 
 
 * High ties and similar totals indicates equivalence.
 
@@ -638,11 +638,11 @@ p.adjust(pvals, method = "bonferroni")
 ```
 After multiple testing adjustment using Bonferroni, none of the win-ratio comparisions between arms shows statistical significance.
 
-* **B Vs A:** Original p=0.099 becomes 0.298 (non-significant)
+* **B Vs A:** Original p=0.0997 becomes 0.299 (non-significant)
 
-* **C Vs B:** Original p=0.841 becomes 1.000 (non-significant)
+* **C Vs B:** Original p=0.8372 becomes 1.000 (non-significant)
 
-* **C Vs A:** Original p=0.051 becomes 0.1525 (non-significant)
+* **C Vs A:** Original p=0.0503 becomes 0.151 (non-significant)
 
 * Bonferroni correction for 3 comparisons appropriately controls arm-wise error but reduces power with approximately 68-69 patients in each arm
 
