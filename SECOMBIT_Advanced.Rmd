@@ -649,7 +649,8 @@ After multiple testing adjustment using Bonferroni, none of the win-ratio compar
 * Unadjusted trends - Arm B and C both favor over Arm A but lacks confirmation.
 
 ## NET BENEFIT
-# B Vs A
+
+#B Vs A
 
 ```{r}
 nb_df_BA <- clean_df %>%
@@ -674,7 +675,7 @@ summary(nb_BA)
 
 * Global results reflects 22% net benefit for B with OS alone contributing for 13% with 8.6% from PFS. 
 
-## C Vs A
+#C Vs A
 
 ```{r}
 
@@ -700,7 +701,8 @@ summary(nb_CA)
 
 * Strong PFS signal noted (p=0.0499)
 
-## C Vs B
+#C Vs B
+
 ```{r}
 nb_df_CB <- clean_df %>%
   filter(Arm %in% c("B","C")) %>%
@@ -723,10 +725,13 @@ summary(nb_CB)
 * OS contribution -1% net confirming long term survival, PFS -3.89% is clinically not significant.
 
 
-##**Multi-state model**
+## Multi-state model
+
 
 State 1: Stable
+
 State 2: Progression
+
 State 3: Death
 
 ```{r}
@@ -751,9 +756,9 @@ Q["Progression","Death"]  <- 1
 
 ```
 
-### Prepare data in msm long format
-```{r}
 
+```{r}
+### Prepare data in msm long format
 
 
 msm_df <- clean_df %>%
@@ -783,7 +788,7 @@ msm_df <- clean_df %>%
       data.frame(id = id, time = 0, state = 1, Arm = arm)
     )
     # Progression
-    ##################################################
+   
     
     if (.$pfs_status == 1) {
       
@@ -795,8 +800,7 @@ msm_df <- clean_df %>%
     }
     
     # Death
-    ##################################################
-    
+  
     if (.$os_status == 1) {
       
       death_time <- .$os_time
@@ -813,7 +817,6 @@ msm_df <- clean_df %>%
     } else {
       
       # Censoring (no death)
-      ##################################################
       
       last_time <- .$os_time  # follow-up time
       
@@ -840,6 +843,7 @@ msm_df <- clean_df %>%
 ```
 
 ##Multi-state  model
+
 ```{r}
 # Arm as covariate affecting all transitions
 msm_fit <- msm(
@@ -857,18 +861,23 @@ summary(msm_fit)
 
 **Interpretation:**
 
-* Huge decline in number of patients in **Stable** over time.
+* Strong decline in number of patients in **Stable** over time.
 
 * Death increases over time.
 
-* Progression is the intermediate state between these two.
+* Progression acts as the intermediate state between these two.
 
-Most patients transition from Stable to Death over time directly or via Progression state. Arm B shows higher HR of 2.56 from Stable to Death and the CI includes 1, which indicates no statistical significant effect on the treatment effect. No treatment arm shows significant impact on transition hazards.
+* Transition HR show that both experimental arms reduce the risk of Stable to Progression compared with Arm A. HR : 0.56, 95% CI - 0.35 - 0.88) for Arm B and 0.59 (95% CI 0.38 - 0.92) for Arm C, indicating statistically significant slowing of disease progression from the stable state.
+
+* Neither Arm has a clear effect on Progression to Death transition. ARM B HR : 1.37 and Arm C HR : 1.02, both includes 1, so there is no evidence taht treatment changes post-progression mortality.
+
+* Most patients transitions from Stable to Death, directly or via Progression but Arms B and C delays Progression from the Stable state without significantly altering the risk of death once Progression has occurred.
 
 
-##Transition probabilities
-##################################################
-# Probabilities from Stable at time t
+
+## Transition probabilities
+
+#Probabilities from Stable at time t
 ```{r}
 pt <- pmatrix.msm(msm_fit, t = 12)   # e.g., 12 months
 pt
@@ -894,31 +903,27 @@ pt_C_12
 ```
 **Arm A:**
 
-* If starting Stable, 51% remain stable, 12.8% progress and 35.9% die.
+* If starting Stable, 72.8% remain stable, 14.7% progress and 12.5% die.
 
-* If starting Progression, 7.2% keeps progressing and 92.8% die.
+* If starting Progression, 27.3% keeps progressing and 72.7% die.
 
 **Arm B:**
 
-* If starting Stable, 36% remain stable, 15.77% progress and 48.2% die.
+* If starting Stable, 83.8% remain stable, 7.4% progress and 8.8% die.
 
-* If starting Progression, 10% keeps progressing and 89.93% die.
+* If starting Progression, 17% keeps progressing and 83% die.
 
 **Arm C:**
 
-* If starting Stable, 44% remain stable, 17% progress and 39% die.
+* If starting Stable, 83% remain stable, 9.2% progress and 7.8% die.
 
-* If starting Progression, 10% progress and 89.98% die.
+* If starting Progression, 26.6% progress and 73.4% die.
 
 **Conclusion:**
 
-* Arm B has the largest probability of death and the lowest probability of remaining Stable. 
+* Arm B and C prolong time in Stable state (83-84% Vs Arm A at 73%), with lower direct death risk from stable (8-9% Vs 12.5%).
 
-* Transition from Progression to Death is almost similar across all the Arms.
-
-* This suggests treatment effect influence more before disease progression rather than after progression. 
-
-
+* Post-progression trajectories are similar across arms, suggessting treatment delays progression onset without altering mortality once progressed aligning with hazard ratios for Stable to Progression (0.56-0.59).
 
 
 ```{r}
@@ -933,7 +938,12 @@ probs_C <- sapply(times, function(t)
 
 
 ```
-##Plots - Probability of remaining Stable by Treatment
+
+
+## Plots 
+
+# Probability of remaining Stable by Treatment
+
 ```{r}
 
 plot(times, probs_A[1,], type = "l", lwd = 2,
@@ -950,7 +960,9 @@ legend("topright",
        lty = c(1,2,3), lwd = 2)
 ```
 
-#Cumulative probability of Death by Treatment
+
+# Cumulative probability of Death by Treatment
+
 ```{r}
 plot(times, probs_A[3,], type = "l", lwd = 2,
      ylim = c(0,1),
@@ -966,6 +978,11 @@ legend("topleft",
        lty = c(1,2,3), lwd = 2)
 
 ```
+
+
+# Long-term state occupancy
+
+## Probailities across arms
 
 ```{r}
 
@@ -985,16 +1002,21 @@ summary_df
 
 **Summary:**
 
-* At the end of 6 months, Arm A has the highest probability of remaining stable(71%), following by Arm C (66%) and Arm B at 60%. Higher deaths are noted in Arm B (22%) and Arm A and Arm B shows less probability of deaths about 15% and 16%.
+* Arms B and C maintain higher probabilities of remaining stable over time compared to Arm A, with slower declines and lower death probabilities throughout follow-up.
 
-* There is a faster decline in probability of being stable in Arm B, which is followed by Arm C. Arm A shows slow decline in the probability of being stable over time.
+* At 12 months, Stable probablities A < B < C, Death A > B > C.
 
-* Only about 8% of probability of being stable was around 30 months in Arm B, where it was 19% in Arm A and 13% in Arm C. Arm A was still found to be superior.
+* Arm B shows fastest initial stable retention (0.92) followed by C (0.91), with A at 0.85.
 
-* Arm A consistently shows highest probability of remaining Stable over time and lowest probability of Death at every time point.
+* By 60 months, Stable A(0.20) < C(0.39) < B (0.41); whereas Death A (0.73) > B & C (0.54).
 
-* Arm B performs worst with rapid decline in probability of remaining Stable and highest mortality rate over time.
+* At the end of 66 months, Stable A (0.15) << B(0.35), C().36) while Death A(0.77) > B (0.58), C(0.62).
 
-* Arm C shows intermediate outcomes between Arm A and Arm B.
+* Arm A consistently shows lowest stable probabilities and highest death probabilities at every time point.
+
+* Arm B performs best long-term while maintaining highest stable state and lowest mortality.
+
+* Arm C shows intermediate but superior to A outcomes throughout the time period.
+
 
 
