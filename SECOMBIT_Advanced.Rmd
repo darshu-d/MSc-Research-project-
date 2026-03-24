@@ -739,11 +739,15 @@ states <- c("Stable", "Progression", "Death")
 
 Q <- matrix(0, nrow = 3, ncol = 3, dimnames = list(states, states))
 
-Q["Stable","Progression"] <- 0.1
-Q["Stable","Death"]       <- 0.05
-Q["Progression","Death"]  <- 0.1
+#Other transitions remain 0 (impossible)
 
-# Other transitions remain 0 (impossible)
+Q["Stable","Progression"] <- 1
+
+#Q["Stable","Death"]       <- 1 though this is logically possible, it is not seen in this dataset
+
+Q["Stable","Death"] <- 0
+Q["Progression","Death"]  <- 1
+
 
 ```
 
@@ -753,32 +757,84 @@ Q["Progression","Death"]  <- 0.1
 
 
 msm_df <- clean_df %>%
-  select(id, Arm, os_time, os_status, pfs_time, pfs_status) %>%
+  filter(
+    !is.na(pfs_time),
+    !is.na(pfs_status),
+    !is.na(os_time),
+    !is.na(os_status)
+  ) %>%
+  mutate(
+    Arm = factor(Arm, levels = c("A","B","C")),
+    
+    # set last follow-up time
+    last_time = case_when(
+      os_status == 1 ~ os_time,
+      !is.na(os_time) | !is.na(pfs_time) ~ pmax(os_time, pfs_time, na.rm = TRUE),
+      TRUE ~ 0
+    )
+  ) %>%
   rowwise() %>%
   do({
-    id <- .$id
+    id  <- .$id
     arm <- .$Arm
     
-    # Start in Stable at time 0
-    df_list <- list(
+    rows <- list(
+      # Everyone starts in Stable
       data.frame(id = id, time = 0, state = 1, Arm = arm)
     )
+    # Progression
+    ##################################################
     
-    # Progression, only if before death
-    if(!is.na(.$pfs_time) && .$pfs_status == 1 && 
-       (is.na(.$os_time) || .$pfs_time < .$os_time)){
-      df_list <- c(df_list, list(data.frame(id = id, time = .$pfs_time, state = 2, Arm = arm)))
+    if (.$pfs_status == 1) {
+      
+      prog_time <- .$pfs_time
+      
+      rows <- c(rows, list(
+        data.frame(id = id, time = prog_time, state = 2, Arm = arm)
+      ))
     }
     
-    # Death, if occurred
-    if(!is.na(.$os_time) && .$os_status == 1){
-      df_list <- c(df_list, list(data.frame(id = id, time = .$os_time, state = 3, Arm = arm)))
+    # Death
+    ##################################################
+    
+    if (.$os_status == 1) {
+      
+      death_time <- .$os_time
+      
+      # Ensure strict ordering if progression exists
+      if (.$pfs_status == 1 && death_time <= .$pfs_time) {
+        death_time <- .$pfs_time + 1e-5
+      }
+      
+      rows <- c(rows, list(
+        data.frame(id = id, time = death_time, state = 3, Arm = arm)
+      ))
+      
+    } else {
+      
+      # Censoring (no death)
+      ##################################################
+      
+      last_time <- .$os_time  # follow-up time
+      
+      last_state <- ifelse(.$pfs_status == 1, 2, 1)
+      
+      # Do NOT duplicate row if progression already at same time
+      
+      if (!(.$pfs_status == 1 && .$pfs_time == last_time)) {
+        
+        rows <- c(rows, list(
+          data.frame(id = id, time = last_time, state = last_state, Arm = arm)
+        ))
+      }
     }
     
-    bind_rows(df_list)
+    bind_rows(rows)
   }) %>%
   ungroup() %>%
   arrange(id, time)
+
+
 
 
 ```
@@ -941,68 +997,4 @@ summary_df
 
 * Arm C shows intermediate outcomes between Arm A and Arm B.
 
-
-
-
-
-**At Time = 6:**
-
-* Arm A has highest probability of remaining stable (~72%).
-
-* Arm B has the lowest probability of remaining stable (~60%) and death is higher in this arm (~23%).
-
-**At Time = 12:**
-
-* Probability of remaining stable has reduced from 59% to 36% in Arm B.
-
-* Still Arm A performs best with Arm C at intermediate.
-
-**At Time = 24:**
-
-* In Arm B, the probability of being Stable declined further to 12.9%
-
-* Arm A performs better and Arm C still at intermediate.
-
-**At Time = 30:**
-
-* Arm A still performs better (18.8%) than Arm B and C.
-
-* 
-
-**At Time = 36:**
-
-
-**At Time = 42:**
-
-
-**At Time = 48:**
-
-
-
-**At Time = 54:**
-
-
-
-**At Time = 60:**
-
-
-
-**At Time = 66:**
-
-
-
-
-**At Time = 72:**
-
-
-
-
-
-**_Conclusion:_**
-
-* Arm A consistently shows better prognosis.
-
-* Arm B declines over time with poor prognosis.
-
-* Arm C is a sandwich between A and B.
 
