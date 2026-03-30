@@ -979,6 +979,35 @@ legend("topleft",
 
 ```
 
+# Probability of Death conditioned along Progression
+
+```{r}
+#Extracting probabilites of Progression and Death for each treatment arm
+
+times <- seq(0, 72, by = 1) 
+prob_death_A <- sapply(times, function(t)
+  pmatrix.msm(msm_fit, t = t, covariates = list(Arm = "A"))[2, 3])
+
+probs_death_B <- sapply(times, function(t)
+  pmatrix.msm(msm_fit, t = t, covariates = list(Arm = "B"))[2, 3])
+
+probs_death_C <- sapply(times, function(t)
+  pmatrix.msm(msm_fit, t = t, covariates = list(Arm = "C"))[2, 3])
+
+
+#Plot
+
+plot(times, prob_death_A, type = "l",lwd = 2,
+     ylim = c(0,1),
+     xlab = "Time since Progression (months)",
+     ylab = "P(Death | Progression)",
+     main = "Probability of Death conditioned along Progression by Treatment")
+
+lines(times, probs_death_B, lwd = 2, lty = 2)
+lines(times, probs_death_C, lwd = 2, lty = 3)
+
+legend("bottomright", legend = c("Arm A", "Arm B", "Arm C"), lty = c(1,2,3),lwd = 2)
+```
 
 # Long-term state occupancy
 
@@ -1017,6 +1046,8 @@ summary_df
 * Arm B performs best long-term while maintaining highest stable state and lowest mortality.
 
 * Arm C shows intermediate but superior to A outcomes throughout the time period.
+
+
 
 
 
