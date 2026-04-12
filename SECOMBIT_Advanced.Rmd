@@ -322,23 +322,33 @@ tidy_cox(cox_pfs_arm, "Cox model — Progression-Free Survival (PFS) by ARM")
 par(mar = c(3, 3, 1.1, 1))
 fit_os <- survfit(Surv(os_time, os_status) ~ Arm, data = clean_df)
 
-ggsurvplot(
+os_km <- ggsurvplot(
   fit_os, data = clean_df,
   xlab = "Time (months)", ylab = "Survival probability",
   title = "Overall Survival (OS)",
-  risk.table = FALSE, pval = TRUE, conf.int = TRUE
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.5)
 )
+
+os_km$plot <- os_km$plot + geom_vline(xintercept = 2, linetype = "dashed") +
+  annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
+
+os_km
 ```
 ```{r}
 par(mar = c(3, 3, 1.1, 1))
 fit_pfs <- survfit(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
 
-ggsurvplot(
+pfs_km <- ggsurvplot(
   fit_pfs, data = clean_df,
   xlab = "Time (months)", ylab = "Survival probability",
   title = "Progression-Free Survival (PFS)",
-  risk.table = FALSE, pval = TRUE, conf.int = TRUE
+ risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.2)
 ) 
+
+pfs_km$plot <- pfs_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
+  annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
+
+pfs_km
 ```
 
 ## LogRank test - OS and PFS
@@ -457,13 +467,17 @@ This justifies moving beyond standard Cox to time-varying effects, stratified mo
 par(mar = c(3, 3, 1.1, 1))
 fit_comp <- survfit(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
 
-ggsurvplot(
+comp_km <- ggsurvplot(
   fit_comp, data = clean_df,
   xlab = "Time (months)", ylab = "Survival probability",
   title = "Composite Outcome",
-  risk.table = FALSE, pval = TRUE, conf.int = TRUE,
-  legend.title = "Arm", legend.labs = levels(clean_df$Arm)
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE, 
+  legend.title = "Arm", legend.labs = levels(clean_df$Arm),pval.coord = c(10,0.2)
 )
+comp_km$plot <- comp_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
+  annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
+
+comp_km
 ```
 
 
@@ -782,10 +796,14 @@ msm_df <- clean_df %>%
   do({
     id  <- .$id
     arm <- .$Arm
+    sites <- .$Sites
+    ldh <- .$LDH
+    tmb <- .$TMB
+    jak <- .$JAK
     
     rows <- list(
       # Everyone starts in Stable
-      data.frame(id = id, time = 0, state = 1, Arm = arm)
+      data.frame(id = id, time = 0, state = 1, Arm = arm, Sites = sites, LDH = ldh, TMB  = tmb, JAK = jak)
     )
     # Progression
    
@@ -795,7 +813,7 @@ msm_df <- clean_df %>%
       prog_time <- .$pfs_time
       
       rows <- c(rows, list(
-        data.frame(id = id, time = prog_time, state = 2, Arm = arm)
+        data.frame(id = id, time = prog_time, state = 2, Arm = arm, Sites = sites, LDH = ldh, TMB  = tmb, JAK = jak)
       ))
     }
     
@@ -811,7 +829,7 @@ msm_df <- clean_df %>%
       }
       
       rows <- c(rows, list(
-        data.frame(id = id, time = death_time, state = 3, Arm = arm)
+        data.frame(id = id, time = death_time, state = 3, Arm = arm, Sites = sites, LDH = ldh, TMB  = tmb, JAK = jak)
       ))
       
     } else {
@@ -827,7 +845,7 @@ msm_df <- clean_df %>%
       if (!(.$pfs_status == 1 && .$pfs_time == last_time)) {
         
         rows <- c(rows, list(
-          data.frame(id = id, time = last_time, state = last_state, Arm = arm)
+          data.frame(id = id, time = last_time, state = last_state, Arm = arm, Sites = sites, LDH = ldh, TMB  = tmb, JAK = jak)
         ))
       }
     }
@@ -873,7 +891,21 @@ summary(msm_fit)
 
 * Most patients transitions from Stable to Death, directly or via Progression but Arms B and C delays Progression from the Stable state without significantly altering the risk of death once Progression has occurred.
 
+```{r}
+#MSM with all covariates
+msm_fit_all <- msm(
+  state ~ time,
+  subject = id,
+  data = msm_df,
+  qmatrix = Q,
+  covariates = ~  Arm + Sites + LDH + TMB + JAK,
+  exacttimes = TRUE
+)
 
+# Summary
+summary(msm_fit_all)
+
+```
 
 ## Transition probabilities
 
