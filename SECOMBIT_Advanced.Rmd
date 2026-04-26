@@ -326,7 +326,7 @@ os_km <- ggsurvplot(
   fit_os, data = clean_df,
   xlab = "Time (months)", ylab = "Survival probability",
   title = "Overall Survival (OS)",
-  risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.5)
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.5), 
 )
 
 os_km$plot <- os_km$plot + geom_vline(xintercept = 2, linetype = "dashed") +
@@ -334,6 +334,8 @@ os_km$plot <- os_km$plot + geom_vline(xintercept = 2, linetype = "dashed") +
 
 os_km
 ```
+
+
 ```{r}
 par(mar = c(3, 3, 1.1, 1))
 fit_pfs <- survfit(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
@@ -350,8 +352,66 @@ pfs_km$plot <- pfs_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
 
 pfs_km
 ```
+## KM plot for composite outcome
+
+```{r}
+par(mar = c(3, 3, 1.1, 1))
+fit_comp <- survfit(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
+
+comp_km <- ggsurvplot(
+  fit_comp, data = clean_df,
+  xlab = "Time (months)", ylab = "Survival probability",
+  title = "Composite Outcome",
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE, 
+  legend.title = "Arm", legend.labs = levels(clean_df$Arm),pval.coord = c(10,0.2)
+)
+comp_km$plot <- comp_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
+  annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
+
+comp_km
+```
+
+
+## KM curves until 2 months
+
+```{r, warning=FALSE}
+os_km_2 <- ggsurvplot(
+  fit_os, data = clean_df,
+  xlab = "Time (months)", ylab = "Survival probability",
+  title = "Overall Survival (OS)",
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.5), xlim = c(0,4), ylim = c(0.9,1.0),break.time.by = 1
+)
+
+os_km_2
+
+```
+
+```{r, warning=FALSE}
+pfs_km_2 <- ggsurvplot(
+  fit_pfs, data = clean_df,
+  xlab = "Time (months)", ylab = "Survival probability",
+  title = "Progression-Free Survival (PFS)",
+ risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.2), xlim = c(0,4), ylim = c(0.9,1.0), break.time.by = 1
+) 
+
+pfs_km_2
+
+```
+```{r, warning=FALSE}
+comp_km_2 <- ggsurvplot(
+  fit_comp, data = clean_df,
+  xlab = "Time (months)", ylab = "Survival probability",
+  title = "Composite Outcome",
+  risk.table = FALSE, pval = TRUE, conf.int = TRUE, 
+  legend.title = "Arm", legend.labs = levels(clean_df$Arm),pval.coord = c(10,0.2), xlim = c(0,4), ylim = c(0.9,1.0), break.by.time = 1
+)
+
+comp_km_2
+
+```
 
 ## LogRank test - OS and PFS
+
 ```{r}
 
 
@@ -379,6 +439,26 @@ Survival curves and log‑rank tests
 The Kaplan–Meier curves for OS appear relatively close, and the log‑rank test p‑value around 0.25 suggests no statistically significant difference in overall survival across arms at this stage.
 
 The PFS curves separate more clearly, with a log‑rank p‑value near 0.02, indicating evidence that at least one arm differs in progression‑free survival, consistent with SECOMBIT reports that sequencing can affect progression endpoints.
+
+# LogRank test - Composite Outcome
+
+```{r}
+logrank_comp  <- survdiff(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
+
+p_comp  <- 1 - pchisq(logrank_comp$chisq,  df = length(logrank_comp$n)  - 1)
+
+
+logrank_tab <- data.frame(
+  Endpoint = "Composite Outcome",
+  `Chi-square` = round((logrank_comp$chisq), 2),
+  df = length(logrank_comp$n)-1,
+  `p-value` = signif(p_comp, 3)
+)
+
+knitr::kable(logrank_tab, format = "html", align = "lccc") |>
+  kableExtra::kable_styling(full_width = TRUE, font_size = 16)
+
+```
 
 ## Cox proportional Hazards model - OS and PFS
 
@@ -432,76 +512,8 @@ TMB ≥10 has HR 0.85 (95% CI: 0.40–1.78, p=0.666), a neutral protective trend
 
 Covariates such as elevated LDH, high TMB, or multiple sites, when associated with HRs above 1, reflect faster progression, again consistent with external evidence that high tumour burden and certain biomarker profiles predict shorter progression‑free survival.
 
-### PH Test
+## Cox proportional Hazards model - Composite Outcome
 
-```{r ph-global, results="asis", echo=FALSE}
-ph_os  <- cox.zph(cox_os)
-ph_pfs <- cox.zph(cox_pfs)
-
-ph_tab <- data.frame(
-  Endpoint = c("OS", "PFS"),
-  `PH test p-value` = signif(c(ph_os$table["GLOBAL","p"], ph_pfs$table["GLOBAL","p"]), 3)
-)
-
-knitr::kable(ph_tab, format="html") |>
-  kableExtra::kable_styling(full_width=TRUE, font_size=18)
-```
-**Summary**
-
-The PH test p-values indicate moderate violations of the proportional hazards assumption in the OS model and a more serious violation in the PFS model.
-
-**OS model (p = 0.0581)**
-This borderline p-value suggests the proportional hazards assumption holds approximately for overall survival, but there's weak evidence against it.
-
-Hazard ratios from the Cox model remain reasonably interpretable, though caution is warranted; the curves may cross or diverge over time.
-
-
-** PFS model (p = 0.0119)**
-
-The low p-value clearly rejects proportional hazards for progression-free survival, meaning treatment effects likely change over follow-up time.
-
-This justifies moving beyond standard Cox to time-varying effects, stratified models, or multi-state approaches.
-
-##KM plot for composite outcome
-```{r}
-par(mar = c(3, 3, 1.1, 1))
-fit_comp <- survfit(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
-
-comp_km <- ggsurvplot(
-  fit_comp, data = clean_df,
-  xlab = "Time (months)", ylab = "Survival probability",
-  title = "Composite Outcome",
-  risk.table = FALSE, pval = TRUE, conf.int = TRUE, 
-  legend.title = "Arm", legend.labs = levels(clean_df$Arm),pval.coord = c(10,0.2)
-)
-comp_km$plot <- comp_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
-  annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
-
-comp_km
-```
-
-
-#LogRank test - Composite Outcome
-
-```{r}
-logrank_comp  <- survdiff(Surv(comp_time, comp_status) ~ Arm, data = clean_df)
-
-p_comp  <- 1 - pchisq(logrank_comp$chisq,  df = length(logrank_comp$n)  - 1)
-
-
-logrank_tab <- data.frame(
-  Endpoint = "Composite Outcome",
-  `Chi-square` = round((logrank_comp$chisq), 2),
-  df = length(logrank_comp$n)-1,
-  `p-value` = signif(p_comp, 3)
-)
-
-knitr::kable(logrank_tab, format = "html", align = "lccc") |>
-  kableExtra::kable_styling(full_width = TRUE, font_size = 16)
-
-```
-
-##Cox proportional Hazards model - Composite Outcome
 ```{r}
 library(broom)
 
@@ -526,6 +538,38 @@ tidy_cox_comp <- function(fit, title){
 tidy_cox_comp(cox_comp,  "Cox model — Composite Outcome")
 cat("<br>")
 ```
+
+### PH Test
+
+```{r ph-global, results="asis", echo=FALSE}
+ph_os  <- cox.zph(cox_os)
+ph_pfs <- cox.zph(cox_pfs)
+
+ph_tab <- data.frame(
+  Endpoint = c("OS", "PFS"),
+  `PH test p-value` = signif(c(ph_os$table["GLOBAL","p"], ph_pfs$table["GLOBAL","p"]), 3)
+)
+
+knitr::kable(ph_tab, format="html") |>
+  kableExtra::kable_styling(full_width=TRUE, font_size=18)
+```
+
+**Summary**
+
+The PH test p-values indicate moderate violations of the proportional hazards assumption in the OS model and a more serious violation in the PFS model.
+
+**OS model (p = 0.0581)**
+
+This borderline p-value suggests the proportional hazards assumption holds approximately for overall survival, but there's weak evidence against it.
+
+Hazard ratios from the Cox model remain reasonably interpretable, though caution is warranted; the curves may cross or diverge over time.
+
+
+**PFS model (p = 0.0119)**
+
+The low p-value clearly rejects proportional hazards for progression-free survival, meaning treatment effects likely change over follow-up time.
+
+This justifies moving beyond standard Cox to time-varying effects, stratified models, or multi-state approaches.
 
 
 ```{r}
@@ -664,7 +708,7 @@ After multiple testing adjustment using Bonferroni, none of the win-ratio compar
 
 ## NET BENEFIT
 
-#B Vs A
+# B Vs A
 
 ```{r}
 nb_df_BA <- clean_df %>%
@@ -688,8 +732,8 @@ summary(nb_BA)
 * Significant PFS contribution (p-value 0.031)
 
 * Global results reflects 22% net benefit for B with OS alone contributing for 13% with 8.6% from PFS. 
-
-#C Vs A
+ 
+# C Vs A
 
 ```{r}
 
@@ -715,7 +759,7 @@ summary(nb_CA)
 
 * Strong PFS signal noted (p=0.0499)
 
-#C Vs B
+# C Vs B
 
 ```{r}
 nb_df_CB <- clean_df %>%
@@ -860,7 +904,7 @@ msm_df <- clean_df %>%
 
 ```
 
-##Multi-state  model
+## Multi-state  model
 
 ```{r}
 # Arm as covariate affecting all transitions
@@ -892,7 +936,8 @@ summary(msm_fit)
 * Most patients transitions from Stable to Death, directly or via Progression but Arms B and C delays Progression from the Stable state without significantly altering the risk of death once Progression has occurred.
 
 ```{r}
-#MSM with all covariates
+# MSM with all covariates
+
 msm_fit_all <- msm(
   state ~ time,
   subject = id,
@@ -909,7 +954,8 @@ summary(msm_fit_all)
 
 ## Transition probabilities
 
-#Probabilities from Stable at time t
+# Probabilities from Stable at time t
+
 ```{r}
 pt <- pmatrix.msm(msm_fit, t = 12)   # e.g., 12 months
 pt
