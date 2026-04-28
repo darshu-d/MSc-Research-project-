@@ -420,6 +420,7 @@ comp_km_2
 logrank_os  <- survdiff(Surv(os_time, os_status) ~ Arm, data = clean_df)
 logrank_pfs <- survdiff(Surv(pfs_time, pfs_status) ~ Arm, data = clean_df)
 
+
 p_os  <- 1 - pchisq(logrank_os$chisq,  df = length(logrank_os$n)  - 1)
 p_pfs <- 1 - pchisq(logrank_pfs$chisq, df = length(logrank_pfs$n) - 1)
 
@@ -546,6 +547,7 @@ cat("<br>")
 ```{r ph-global, results="asis", echo=FALSE}
 ph_os  <- cox.zph(cox_os)
 ph_pfs <- cox.zph(cox_pfs)
+
 
 ph_tab <- data.frame(
   Endpoint = c("OS", "PFS"),
