@@ -310,6 +310,8 @@ tidy_cox <- function(fit, title){
 tidy_cox(cox_os_arm,  "Cox model — Overall Survival (OS) by ARM")
 cat("<br>")
 tidy_cox(cox_pfs_arm, "Cox model — Progression-Free Survival (PFS) by ARM")
+cat("<br>")
+tidy_cox(cox_comp_arm, "Cox model — Composite Outcome by ARM")
 
 
 ```
