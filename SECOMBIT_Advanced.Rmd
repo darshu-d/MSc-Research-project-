@@ -331,8 +331,8 @@ os_km <- ggsurvplot(
   risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.5), 
 )
 
-os_km$plot <- os_km$plot + geom_vline(xintercept = 2, linetype = "dashed") +
-  annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
+#os_km$plot <- os_km$plot + geom_vline(xintercept = 2, linetype = "dashed") +
+  #annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
 
 os_km
 ```
@@ -349,8 +349,8 @@ pfs_km <- ggsurvplot(
  risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.2)
 ) 
 
-pfs_km$plot <- pfs_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
-  annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
+#pfs_km$plot <- pfs_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
+  #annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
 
 pfs_km
 ```
@@ -367,8 +367,8 @@ comp_km <- ggsurvplot(
   risk.table = FALSE, pval = TRUE, conf.int = TRUE, 
   legend.title = "Arm", legend.labs = levels(clean_df$Arm),pval.coord = c(10,0.2)
 )
-comp_km$plot <- comp_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
-  annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
+#comp_km$plot <- comp_km$plot + geom_vline(xintercept = 2, linetype = "dashed")+
+  #annotate("text", x = 2, y = 0.2, label = "2 months", angle = 90, vjust = -1)
 
 comp_km
 ```
@@ -381,7 +381,7 @@ os_km_2 <- ggsurvplot(
   fit_os, data = clean_df,
   xlab = "Time (months)", ylab = "Survival probability",
   title = "Overall Survival (OS)",
-  risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.5), xlim = c(0,4), ylim = c(0.9,1.0),break.time.by = 1
+  risk.table = FALSE, pval = TRUE, pval.coord = c(10,0.5), xlim = c(0,4), ylim = c(0.9,1.0),break.time.by = 1
 )
 
 os_km_2
