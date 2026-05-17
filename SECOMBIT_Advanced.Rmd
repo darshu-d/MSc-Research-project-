@@ -289,7 +289,7 @@ cox_os_arm  <- coxph(Surv(os_time, os_status) ~ Arm,
 cox_pfs_arm <- coxph(Surv(pfs_time, pfs_status) ~ Arm,
                  data = clean_df, ties = "efron")
 
-cox_comp_arm <- coxph(Surv(comp_time, os_status) ~ Arm,
+cox_comp_arm <- coxph(Surv(comp_time, comp_status) ~ Arm,
                   data = clean_df, ties = "efron")
 
 tidy_cox <- function(fit, title){
@@ -393,7 +393,7 @@ pfs_km_2 <- ggsurvplot(
   fit_pfs, data = clean_df,
   xlab = "Time (months)", ylab = "Survival probability",
   title = "Progression-Free Survival (PFS)",
- risk.table = FALSE, pval = TRUE, conf.int = TRUE, pval.coord = c(10,0.2), xlim = c(0,4), ylim = c(0.9,1.0), break.time.by = 1
+ risk.table = FALSE, pval = TRUE, pval.coord = c(10,0.2), xlim = c(0,4), ylim = c(0.9,1.0), break.time.by = 1
 ) 
 
 pfs_km_2
@@ -404,7 +404,7 @@ comp_km_2 <- ggsurvplot(
   fit_comp, data = clean_df,
   xlab = "Time (months)", ylab = "Survival probability",
   title = "Composite Outcome",
-  risk.table = FALSE, pval = TRUE, conf.int = TRUE, 
+  risk.table = FALSE, pval = TRUE,
   legend.title = "Arm", legend.labs = levels(clean_df$Arm),pval.coord = c(10,0.2), xlim = c(0,4), ylim = c(0.9,1.0), break.by.time = 1
 )
 
