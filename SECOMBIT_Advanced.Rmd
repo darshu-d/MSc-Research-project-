@@ -961,10 +961,10 @@ summary(msm_fit_all)
 # Probabilities from Stable at time t
 
 ```{r}
-pt <- pmatrix.msm(msm_fit, t = 12)   # e.g., 12 months
+pt <- pmatrix.msm(msm_fit, t = 12) 
 pt
 
-# Example: plot transition probabilities from Stable over time
+# Plot : Transition probabilities from Stable over time
 times <- seq(0, 72, by = 1) 
 probs <- sapply(times, function(t) pmatrix.msm(msm_fit, t = t)[1, ])
 matplot(times, t(probs), type = "l", lty = 1, col = 1:3,
@@ -1097,7 +1097,7 @@ legend("bottomright", legend = c("Arm A", "Arm B", "Arm C"), lty = c(1,2,3),lwd 
 
 ```{r}
 
-timeline <- seq(6,72, by = 6)
+timeline <- seq(0,72, by = 2)
 summary_df <- data.frame(
   Time = timeline,
   Stable_A = round(probs_A[1, match(timeline, times)],2),
