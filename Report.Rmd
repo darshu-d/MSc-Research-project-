@@ -637,4 +637,4 @@ Jackson CH. Multi-state models for panel data: the msm package for R. Journal of
 
 Ascierto PA, et al. SECOMBIT phase II trial. 2023.
 
-Ascierto PA, et al. SECOMBIT trial four-year survival and biomarker analysis. 2024.
+Ascierto PA, et al. SECOMBIT trial four-year survival and biomarker analysis. 2024...
