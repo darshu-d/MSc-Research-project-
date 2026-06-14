@@ -1,0 +1,640 @@
+---
+title: "Methods for Handling Multiple Outcomes in Health Data"
+author: "Sivakamakshi Muthu Kumarasamy, Shivadarshini Sreekanth"
+output:
+  pdf_document: default
+  rticles::arxiv_article: default
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
+
+library(tidyverse)
+library(survival)
+library(survminer)
+library(msm)
+library(knitr)
+library(kableExtra)
+library(rticles)
+```
+
+# Abstract
+
+* Clinical studies frequently involve multiple outcomes such as Overall Survival, Progression-Free Survival, recurrence, progression and death.
+* These outcomes are often related and may occur sequentially over time.
+* Analysing each endpoint separately may fail to capture the complete disease pathway.
+* This project compares statistical strategies for handling multiple outcomes in health data using the SECOMBIT clinical trial dataset.
+* The methods considered include Logistic Regression, Kaplan-Meier analysis, Log-Rank test, Cox Proportional Hazards Model, Composite Endpoint Analysis, Win Ratio, Net Benefit and Multi-State Models.
+* The results suggest that traditional methods are useful for preliminary analysis, but advanced methods provide richer clinical interpretation.
+* Multi-State Models were particularly useful for modelling transition-specific treatment effects over time.
+
+**Keywords:** Multiple Outcomes, Survival Analysis, Composite Endpoints, Win Ratio, Net Benefit, Multi-State Models, SECOMBIT, Health Data Science
+
+# 1. Introduction
+
+## 1.1 Background
+
+* Clinical research often involves more than one outcome of interest.
+* In oncology and other chronic disease settings, patients may experience several clinically important events during follow-up.
+* Common outcomes include:
+
+  * Overall Survival
+  * Progression-Free Survival
+  * Disease Recurrence
+  * Metastasis
+  * Death
+* Traditional statistical methods often analyse each outcome separately.
+* Separate analysis may not fully reflect the patient journey.
+* Multiple outcomes provide a more complete understanding of treatment effectiveness.
+* For example, disease progression may occur before death, and both outcomes together provide a clearer picture of clinical benefit.
+
+## 1.2 Why Multiple Outcomes Matter
+
+* Patients may move through several disease stages over time.
+* Example disease pathway:
+
+  * Stable Disease
+  * Progression
+  * Recurrence
+  * Death
+* These outcomes are not independent.
+* Progression may increase the risk of death.
+* Treatment effects may differ depending on disease stage.
+* Death is usually more clinically important than progression.
+* Therefore, methods are needed that can capture:
+
+  * Outcome relationships
+  * Outcome hierarchy
+  * Timing of events
+  * Disease progression pathways
+
+## 1.3 Challenges in Analysing Multiple Outcomes
+
+* Outcomes may occur sequentially.
+* Outcomes may be statistically dependent.
+* Different outcomes may have different clinical importance.
+* Analysing outcomes separately may ignore patient trajectories.
+* Multiple testing may increase the risk of false positive findings.
+* Treatment effects may change during follow-up.
+* Standard Cox models may be limited if the proportional hazards assumption is violated.
+* Composite endpoints may combine outcomes that are not equally important.
+
+## 1.4 Aim of the Project
+
+* To compare different statistical strategies for handling multiple outcomes in health data.
+
+## 1.5 Objectives
+
+### Primary Objectives
+
+* Analyse Overall Survival.
+* Analyse Progression-Free Survival.
+* Compare separate outcome and composite outcome approaches.
+* Evaluate predictive modelling strategies.
+
+### Secondary Objectives
+
+* Explore advanced methods such as Win Ratio.
+* Explore Multi-State Models.
+* Assess usefulness of these methods in healthcare research.
+* Compare advantages and disadvantages of each method.
+* Identify which methods provide better clinical interpretation.
+
+# 2. Dataset Description
+
+## 2.1 SECOMBIT Clinical Trial Dataset
+
+* This project used the SECOMBIT clinical trial dataset.
+* SECOMBIT was a phase II randomised clinical trial.
+* The study involved patients with metastatic BRAF V600 mutated melanoma.
+* The dataset included approximately 209 patients.
+* Patients were divided into three treatment arms:
+
+  * Arm A
+  * Arm B
+  * Arm C
+
+## 2.2 Main Outcomes
+
+* Overall Survival (OS)
+* Progression-Free Survival (PFS)
+
+### Overall Survival
+
+* Overall Survival refers to the time from treatment or study entry until death.
+* It is one of the most important endpoints in oncology trials.
+* It directly reflects patient survival benefit.
+
+### Progression-Free Survival
+
+* Progression-Free Survival refers to the time until disease progression or death.
+* It captures earlier clinical deterioration before death.
+* It is useful when survival follow-up is long or when progression is clinically meaningful.
+
+## 2.3 Covariates
+
+The main covariates considered were:
+
+* Treatment arm
+* Number of metastatic sites
+* LDH level
+* Tumour Mutational Burden
+* JAK mutation status
+
+## 2.4 Why This Dataset Was Suitable
+
+* It contains multiple clinically important outcomes.
+* OS and PFS are related but represent different aspects of treatment benefit.
+* It allows traditional survival methods and advanced multi-outcome methods to be compared.
+* It includes clinical and biomarker covariates.
+* It supports modelling of disease progression from stable disease to progression and death.
+
+# 3. Literature Review
+
+## 3.1 Multiple Outcomes in Clinical Research
+
+* Multiple outcomes are common in clinical trials.
+* This is especially common in oncology studies.
+* Researchers may be interested in whether a treatment:
+
+  * Delays progression
+  * Improves survival
+  * Reduces recurrence
+  * Reduces metastasis
+  * Improves clinical decision-making
+* These outcomes may not be independent.
+* A patient who progresses earlier may have a higher risk of death later.
+* Separate analysis of outcomes is simple but may miss relationships between events.
+* Advanced statistical methods are needed to evaluate multiple outcomes together.
+
+## 3.2 Composite Endpoints
+
+### What It Is
+
+* Composite endpoints combine several outcomes into one endpoint.
+* A patient is considered to have experienced the composite event if any component event occurs.
+* For example, progression or death may be combined into a single endpoint.
+
+### Advantages
+
+* Increases number of events.
+* Can improve statistical power.
+* Provides a single summary endpoint.
+* Useful when individual event rates are low.
+* Can reduce sample size requirements.
+
+### Disadvantages
+
+* Components may differ in clinical importance.
+* Interpretation can be difficult.
+* A treatment effect may be driven by a less important component.
+* Important differences between outcomes may be hidden.
+* It may not describe the full disease pathway.
+
+## 3.3 Survival Analysis
+
+### What It Is
+
+* Survival analysis is used when the outcome is time to event.
+* It is important because not all patients experience the event during follow-up.
+* Patients who do not experience the event are censored.
+
+### Common Survival Methods
+
+* Kaplan-Meier analysis
+* Log-Rank test
+* Cox Proportional Hazards Model
+
+### Strength
+
+* Survival methods account for timing and censoring.
+
+### Limitation
+
+* They usually analyse one outcome at a time.
+
+## 3.4 Win Ratio
+
+### What It Is
+
+* The Win Ratio is a hierarchical method for comparing treatment groups using multiple outcomes.
+* The most clinically important outcome is compared first.
+* If patients are tied on the first outcome, the next outcome is compared.
+
+### Hierarchy Used in This Project
+
+1. Overall Survival
+2. Progression-Free Survival
+
+### Why It Is Useful
+
+* It respects clinical priority.
+* Death is considered more important than progression.
+* It avoids treating all endpoints as equally important.
+
+## 3.5 Net Benefit
+
+### What It Is
+
+* Net Benefit measures the overall clinical advantage of a treatment or prediction model.
+* A positive Net Benefit suggests that the treatment provides clinical value.
+* A negative Net Benefit suggests that the treatment is less favourable.
+
+### Why It Is Useful
+
+* It focuses on clinical usefulness rather than only statistical significance.
+* It can help compare decision strategies.
+
+## 3.6 Multi-State Models
+
+### What It Is
+
+* Multi-State Models describe patient movement through different health states over time.
+* Instead of analysing one endpoint at a time, they model transitions between disease states.
+
+### States Used in This Project
+
+* Stable disease
+* Progression
+* Death
+
+### Why It Is Useful
+
+* It captures patient trajectories.
+* It models transition-specific treatment effects.
+* It accounts for the dependency between outcomes.
+
+# 4. Methods: How Each Method Works
+
+## 4.1 Logistic Regression
+
+### Purpose
+
+* Logistic regression was used to analyse binary outcomes.
+* It evaluates whether an event occurred or did not occur.
+
+### How It Works
+
+* The outcome is coded as 0 or 1.
+* The model estimates the probability of the event.
+* It produces Odds Ratios.
+* Odds Ratios compare the odds of an event between groups.
+
+### Why Used in This Project
+
+* It was used as a preliminary method.
+* It helped assess treatment effects on event occurrence.
+* It allowed comparison with time-to-event approaches.
+
+### Advantages
+
+* Simple to implement.
+* Easy to interpret.
+* Allows adjustment for covariates.
+* Useful for initial exploratory analysis.
+
+### Disadvantages
+
+* Ignores timing of events.
+* Does not account for censoring.
+* Analyses outcomes individually.
+* May be misleading for time-to-event data.
+
+## 4.2 Kaplan-Meier Analysis
+
+### Purpose
+
+* Kaplan-Meier analysis was used to estimate survival probabilities over time.
+
+### How It Works
+
+* Uses observed event times.
+* Accounts for censored observations.
+* Produces survival curves.
+* Allows visual comparison between treatment arms.
+
+### Why Used in This Project
+
+* It was used to compare OS and PFS between treatment arms.
+* It showed survival patterns over follow-up time.
+
+### Advantages
+
+* Handles censored data.
+* Provides clear visual comparison.
+* Non-parametric method.
+* Commonly used in clinical research.
+
+### Disadvantages
+
+* Does not adjust for covariates.
+* Usually compares one outcome at a time.
+* Cannot model transition pathways.
+* Does not explain how covariates influence risk.
+
+## 4.3 Log-Rank Test
+
+### Purpose
+
+* The Log-Rank test was used to compare survival curves between treatment arms.
+
+### How It Works
+
+* It compares observed and expected events between groups.
+* It tests whether there is a statistically significant difference between survival curves.
+* It produces a chi-square test statistic and p-value.
+
+### Why Used in This Project
+
+* It was used to test whether OS and PFS differed between treatment arms.
+
+### Advantages
+
+* Simple and widely accepted.
+* Useful for comparing Kaplan-Meier curves.
+* Easy to report in clinical research.
+
+### Disadvantages
+
+* Does not adjust for covariates.
+* Less suitable when hazards are not proportional.
+* Does not explain treatment effects over time.
+* Analyses one endpoint at a time.
+
+## 4.4 Cox Proportional Hazards Model
+
+### Purpose
+
+* The Cox model was used to evaluate the effect of treatment arm and covariates on survival outcomes.
+
+### How It Works
+
+* It models the hazard of an event over time.
+* It produces Hazard Ratios.
+* Hazard Ratios describe relative event risk between groups.
+* It incorporates censored observations.
+* It can adjust for multiple covariates.
+
+### Why Used in This Project
+
+* It was used to assess treatment and biomarker effects on OS and PFS.
+* It provided a time-to-event regression framework.
+
+### Advantages
+
+* Handles censored time-to-event data.
+* Allows covariate adjustment.
+* Provides clinically interpretable Hazard Ratios.
+* Widely used in clinical trials.
+
+### Disadvantages
+
+* Assumes proportional hazards.
+* Requires separate models for OS and PFS.
+* Does not directly model dependencies between outcomes.
+* May be inappropriate if treatment effects change over time.
+
+## 4.5 Composite Endpoint Analysis
+
+### Purpose
+
+* Composite endpoint analysis was used to combine multiple outcomes into a single endpoint.
+
+### How It Works
+
+* A composite event occurs if any component outcome occurs.
+* For example, progression or death can be combined.
+* The combined endpoint is analysed as one outcome.
+
+### Why Used in This Project
+
+* It was used to compare separate and combined outcome approaches.
+* It helped assess whether combining OS and PFS changed interpretation.
+
+### Advantages
+
+* Simplifies analysis.
+* Increases number of events.
+* Can improve statistical power.
+* Useful when multiple outcomes are clinically relevant.
+
+### Disadvantages
+
+* Can hide differences between individual outcomes.
+* May combine outcomes of unequal clinical importance.
+* Interpretation may be less specific.
+* The treatment effect may be driven by one component only.
+
+## 4.6 Win Ratio
+
+### Purpose
+
+* The Win Ratio was used to compare treatment arms using a hierarchy of clinical outcomes.
+
+### How It Works
+
+* Patients are compared pairwise between treatment groups.
+* The most important outcome is compared first.
+* If the first outcome is tied, the second outcome is compared.
+* Treatment wins and control wins are counted.
+* The Win Ratio is calculated as:
+
+\[
+\text{Win Ratio} = \frac{\text{Number of Treatment Wins}}{\text{Number of Control Wins}}
+\]
+
+### Outcome Hierarchy Used
+
+1. Overall Survival
+2. Progression-Free Survival
+
+### Why Used in This Project
+
+* OS and PFS have different clinical importance.
+* Death is more clinically important than progression.
+* The Win Ratio allowed outcomes to be prioritised.
+
+### Advantages
+
+* Prioritises clinically important outcomes.
+* Incorporates multiple outcomes.
+* Avoids treating all outcomes equally.
+* Provides clinically meaningful interpretation.
+
+### Disadvantages
+
+* More computationally complex.
+* Less familiar to some clinical audiences.
+* Interpretation requires careful explanation.
+* Results may depend on the selected hierarchy.
+
+## 4.7 Net Benefit
+
+### Purpose
+
+* Net Benefit was used to evaluate the overall clinical advantage between treatment groups.
+
+### How It Works
+
+* It combines information about benefit and harm.
+* Positive values indicate clinical benefit.
+* Negative values indicate less benefit.
+* Values close to zero suggest limited difference.
+
+### Why Used in This Project
+
+* It helped assess whether treatment differences were clinically meaningful.
+* It supported interpretation beyond statistical significance.
+
+### Advantages
+
+* Focuses on clinical usefulness.
+* Supports decision-making.
+* Helpful when comparing strategies.
+* Easy to interpret when explained clearly.
+
+### Disadvantages
+
+* Depends on clinical assumptions.
+* Less familiar than standard survival methods.
+* Does not replace complete statistical modelling.
+* Interpretation can vary depending on the chosen context.
+
+## 4.8 Multi-State Model
+
+### Purpose
+
+* The Multi-State Model was used to model transitions between disease states.
+
+### State Structure
+
+* State 1: Stable disease
+* State 2: Progression
+* State 3: Death
+
+### Transitions
+
+* Stable disease to progression
+* Progression to death
+
+### How It Works
+
+* It estimates the probability of moving from one state to another.
+* It estimates transition-specific hazards.
+* It evaluates how covariates affect each transition separately.
+* It models patient trajectories over time.
+
+### Why Used in This Project
+
+* OS and PFS are connected outcomes.
+* Disease progression occurs before death for many patients.
+* A Multi-State Model can capture the full disease process more realistically.
+
+### Advantages
+
+* Captures disease progression.
+* Models patient trajectories.
+* Estimates transition-specific treatment effects.
+* Handles dependency between outcomes.
+* Allows dynamic interpretation over time.
+
+### Disadvantages
+
+* More complex than standard survival models.
+* Requires careful definition of states.
+* Requires sufficient event numbers.
+* Interpretation can be challenging.
+* Results may depend on model assumptions.
+
+# 5. Methodology
+
+## 5.1 Data Preparation
+
+* Import SECOMBIT dataset into R.
+* Check variable names and coding.
+* Identify missing values.
+* Recode treatment arm.
+* Recode biomarker variables.
+* Define OS and PFS event indicators.
+* Define composite outcome.
+* Prepare time-to-event variables.
+* Prepare covariates for regression and survival modelling.
+
+## 5.2 Descriptive Analysis
+
+* Generate baseline summaries.
+* Summarise patient characteristics.
+* Compare covariates across treatment arms.
+* Check distribution of outcomes.
+* Identify number of OS and PFS events.
+
+## 5.3 Separate Outcome Analysis
+
+* Analyse OS separately.
+* Analyse PFS separately.
+* Use logistic regression for event occurrence.
+* Use Kaplan-Meier curves for survival probabilities.
+* Use Log-Rank tests to compare survival curves.
+* Use Cox models to estimate treatment effects over time.
+
+## 5.4 Composite Outcome Analysis
+
+* Create a combined endpoint.
+* Define composite event based on progression or death.
+* Compare composite outcome results with separate OS and PFS results.
+* Assess whether the composite endpoint changes interpretation.
+
+## 5.5 Advanced Multiple Outcome Analysis
+
+* Apply Win Ratio using OS first and PFS second.
+* Apply Net Benefit to estimate clinical advantage.
+* Fit Multi-State Model using stable disease, progression and death.
+* Estimate transition-specific effects.
+* Estimate transition probabilities across treatment arms.
+
+## 5.6 Model Assessment
+
+* Assess Cox proportional hazards assumption.
+* Compare model assumptions across methods.
+* Compare interpretability of each method.
+* Identify whether traditional methods are sufficient.
+* Assess whether advanced methods provide additional clinical insight.
+
+## 5.7 Comparison Framework
+
+Methods were compared using:
+
+* Ability to handle multiple outcomes.
+* Ability to incorporate time.
+* Ability to account for censoring.
+* Ability to adjust for covariates.
+* Clinical interpretability.
+* Statistical assumptions.
+* Computational complexity.
+* Ability to model disease progression.
+* Practical usefulness in healthcare research.
+
+# 9. Project Links
+
+The code repository for this project is available at:
+
+https://github.com/darshu-d/MSc-Research-project-
+
+# References
+
+Neuhäuser M. How to deal with multiple endpoints in clinical trials. Fundamental & Clinical Pharmacology. 2006.
+
+Pocock SJ, Ariti CA, Collier TJ, Wang D. The win ratio: a new approach to the analysis of composite endpoints in clinical trials based on clinical priorities. European Heart Journal. 2012.
+
+Vickers AJ, Van Calster B, Steyerberg EW. Net benefit approaches to the evaluation of prediction models, molecular markers, and diagnostic tests. BMJ. 2016.
+
+Jackson CH. Multi-state models for panel data: the msm package for R. Journal of Statistical Software. 2011.
+
+Ascierto PA, et al. SECOMBIT phase II trial. 2023.
+
+Ascierto PA, et al. SECOMBIT trial four-year survival and biomarker analysis. 2024.
