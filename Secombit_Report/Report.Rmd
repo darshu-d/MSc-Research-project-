@@ -100,7 +100,7 @@ The trial included three treatment arms. Arm A received encorafenib plus binimet
 
 ## Dataset Description
 
-The dataset used in this project was obtained from an open-source version of the SECOMBIT clinical trial data made available for research and educational analysis.The dataset contained approximately 209 patients allocated to Arms A, B, and C. The key outcomes were overall survival (OS) and progression-free survival (PFS). Overall survival was defined as the time from study entry to death, while progression-free survival was defined as the time from study entry to disease progression or death. The main covariates available for analysis were treatment arm, number of metastatic sites, lactate dehydrogenase (LDH) level, tumour mutational burden (TMB), and JAK mutation status.
+The dataset used in this project was obtained from an open-source version of the SECOMBIT clinical trial data made available for research and educational analysis. The dataset contained approximately 209 patients allocated to Arms A, B, and C. The key outcomes were overall survival (OS) and progression-free survival (PFS). Overall survival was defined as the time from study entry to death, while progression-free survival was defined as the time from study entry to disease progression or death. The main covariates available for analysis were treatment arm, number of metastatic sites, lactate dehydrogenase (LDH) level, tumour mutational burden (TMB), and JAK mutation status.
 
 The dataset was suitable for this project because it contained multiple clinically important time-to-event outcomes that are related but not equivalent. It also allowed direct comparison between traditional survival methods and more advanced approaches such as win-ratio analysis, net-benefit analysis, and multi-state modelling.
 
@@ -391,28 +391,6 @@ kable(logrank_tab, caption = "Log-rank test results")
 
 The Kaplan--Meier curves for OS appeared relatively close, and the OS log-rank p-value was approximately 0.25, suggesting no statistically significant difference in overall survival across arms. The PFS curves separated more clearly, with a log-rank p-value near 0.02, indicating evidence that at least one arm differed in progression-free survival.
 
-## Early Two-Month Treatment Pattern
-
-Arm C included a planned switch after approximately eight weeks. Therefore, early Kaplan--Meier curves were inspected up to four months to explore whether curve separation or crossing occurred around the two-month treatment-switch point.
-
-```{r km-two-month-os, fig.cap='Early overall survival pattern up to four months'}
-ggsurvplot(fit_os, data = clean_df,
-           xlab = "Time (months)", ylab = "Survival probability",
-           title = "Early Overall Survival Pattern",
-           risk.table = FALSE, pval = TRUE,
-           xlim = c(0, 4), ylim = c(0.90, 1.00), break.time.by = 1)$plot
-```
-
-```{r km-two-month-pfs, fig.cap='Early progression-free survival pattern up to four months'}
-ggsurvplot(fit_pfs, data = clean_df,
-           xlab = "Time (months)", ylab = "Survival probability",
-           title = "Early Progression-Free Survival Pattern",
-           risk.table = FALSE, pval = TRUE,
-           xlim = c(0, 4), ylim = c(0.90, 1.00), break.time.by = 1)$plot
-```
-
-Inspection of the early Kaplan--Meier curves suggested a possible change in the treatment-arm pattern around two months. This time point is clinically relevant because it coincides with the planned treatment switch in Arm C. Although this observation was exploratory, it suggests that treatment sequencing may influence early progression dynamics.
-
 ## Cox Proportional Hazards Models
 
 ```{r cox-models, results='asis'}
@@ -488,17 +466,19 @@ wr_cb <- winratio(id = "id", trt = "Arm",
 
 wr_tab <- data.frame(
   Comparison = c("B vs A", "C vs A", "C vs B"),
-  `Win ratio (95% CI)` = c("1.49 (0.93--2.40)", 
-                           "1.59 (1.00--2.52)", 
-                           "1.06 (0.61--1.84)"),
+  `Win ratio (95% CI)` = c(
+    "1.49 (0.93--2.40)",
+    "1.59 (1.00--2.52)",
+    "1.06 (0.61--1.84)"
+  ),
   `p-value` = c(0.0997, 0.0503, 0.8372),
   check.names = FALSE
 )
 
-kable(wr_tab, digits = 3, caption = "Win-ratio comparison of treatment arms")
+kable(wr_tab, caption = "Win-ratio comparison of treatment arms")
 ```
 
-The win-ratio analysis favoured Arm B over Arm A, with a win ratio of 1.49 and p-value of 0.0997. Arm C also favoured over Arm A, with a win ratio of 1.59 and p-value of 0.0503. Arm C compared with Arm B was close to neutral, with a win ratio of 1.06 and p-value of 0.8372. Overall, Arms B and C showed favourable hierarchical outcome trends compared with Arm A, but there was no clear superiority between Arms B and C.
+The win-ratio analysis favoured Arm B over Arm A, with a win ratio of 1.49 (95% CI 0.93–2.40; p = 0.0997). Arm C also favoured over Arm A, with a win ratio of 1.59 (95% CI 1.00–2.52; p = 0.0503). Arm C compared with Arm B was close to neutral, with a win ratio of 1.06 (95% CI 0.61–1.84; p = 0.8372). Overall, Arms B and C showed favourable hierarchical outcome trends compared with Arm A, but there was no clear superiority between Arms B and C.
 
 ## Net-Benefit Results
 
@@ -560,7 +540,7 @@ nb_tab <- data.frame(
 kable(nb_tab, digits = 3, caption = "Net-benefit comparison of treatment arms")
 ```
 
-The net-benefit analysis supported the same broad interpretation as the win-ratio analysis. Arm B showed a positive global net benefit of approximately 22.0% compared with Arm A, with contributions from both OS and PFS. Arm C showed a similar positive global net benefit of approximately 20.15% compared with Arm A. The comparison between Arms C and B showed no meaningful clinical advantage, with a negative net benefit close to zero.
+The net-benefit analysis supported the same broad interpretation as the win-ratio analysis. Arm B showed a positive global net benefit of 0.220 compared with Arm A, with contributions from OS (0.134) and PFS (0.086; p = 0.031). Arm C showed a positive global net benefit of 0.2015 compared with Arm A, with contributions from OS (0.1323) and PFS (0.0692; p = 0.0499). The comparison between Arms C and B showed no meaningful advantage, with a global net benefit of -0.049.
 
 ## Multi-State Model Results
 
@@ -601,6 +581,28 @@ msm_fit <- msm(state ~ time, subject = id, data = msm_df, qmatrix = Q,
                covariates = ~ Arm, exacttimes = TRUE)
 ```
 
+```{r msm-transition-hr-table, results='asis'}
+msm_hr_tab <- data.frame(
+  `Treatment Arm` = c("Arm A (baseline)", "Arm B", "Arm C"),
+  `Stable to Progression HR (95% CI)` = c(
+    "1.00",
+    "0.56 (0.35–0.88)",
+    "0.59 (0.38–0.92)"
+  ),
+  `Progression to Death HR (95% CI)` = c(
+    "1.00",
+    "1.37 (0.81–2.31)",
+    "1.02 (0.62–1.69)"
+  ),
+  check.names = FALSE
+)
+
+kable(msm_hr_tab,
+      caption = "Multi-state transition hazard ratios by treatment arm")
+```
+
+The multi-state model indicated that Arms B and C reduced the transition hazard from stable disease to progression compared with Arm A. Arm B had a stable-to-progression hazard ratio of 0.56, while Arm C had a stable-to-progression hazard ratio of 0.59. There was no clear evidence that either arm changed the progression-to-death transition when treatment arm alone was included in the multi-state model.
+
 ```{r transition-prob-12, results='asis'}
 pt_A_12 <- pmatrix.msm(msm_fit, t = 12, covariates = list(Arm = "A"))
 pt_B_12 <- pmatrix.msm(msm_fit, t = 12, covariates = list(Arm = "B"))
@@ -610,13 +612,31 @@ stable_12_tab <- data.frame(
   Arm = c("A", "B", "C"),
   `P(Stable at 12 months)` = c(pt_A_12[1,1], pt_B_12[1,1], pt_C_12[1,1]),
   `P(Progression at 12 months)` = c(pt_A_12[1,2], pt_B_12[1,2], pt_C_12[1,2]),
-  `P(Death at 12 months)` = c(pt_A_12[1,3], pt_B_12[1,3], pt_C_12[1,3])
+  `P(Death at 12 months)` = c(pt_A_12[1,3], pt_B_12[1,3], pt_C_12[1,3]),
+  check.names = FALSE
 )
 
 kable(stable_12_tab, digits = 3, caption = "Twelve-month transition probabilities from stable disease")
 ```
 
-At 12 months, Arm A had a lower probability of remaining stable than Arms B and C. In the R analysis, the probability of remaining stable was approximately 72.8% for Arm A, 83.8% for Arm B, and 83.0% for Arm C. The probability of death from the stable state was also higher in Arm A than in Arms B and C.
+```{r transition-probabilities-across-time, results='asis'}
+prob_time_tab <- data.frame(
+  Time = c(0, 2, 4, 6, 8, 10, 12),
+  Stable_A = c(1.00, 0.95, 0.90, 0.85, 0.81, 0.77, 0.73),
+  Stable_B = c(1.00, 0.97, 0.94, 0.92, 0.89, 0.86, 0.84),
+  Stable_C = c(1.00, 0.97, 0.94, 0.91, 0.88, 0.86, 0.83),
+  Death_A = c(0.00, 0.01, 0.02, 0.04, 0.06, 0.09, 0.12),
+  Death_B = c(0.00, 0.00, 0.01, 0.03, 0.05, 0.07, 0.09),
+  Death_C = c(0.00, 0.00, 0.01, 0.02, 0.04, 0.06, 0.08),
+  check.names = FALSE
+)
+
+kable(prob_time_tab, digits = 2,
+      caption = "State occupation probabilities across time by treatment arm") %>%
+  kable_styling(latex_options = c("hold_position"))
+```
+
+Across time, Arms B and C maintained higher probabilities of remaining stable than Arm A. By 12 months, the probability of remaining stable was approximately 0.73 for Arm A, 0.84 for Arm B, and 0.83 for Arm C. The probability of death was also higher for Arm A than for Arms B and C at the same time point.
 
 ```{r msm-state-occupation, fig.cap='State occupation probabilities from stable disease'}
 times <- seq(0, 72, by = 1)
@@ -648,8 +668,6 @@ lines(times, probs_B[3,], lwd = 2, lty = 2)
 lines(times, probs_C[3,], lwd = 2, lty = 3)
 legend("topleft", legend = c("Arm A", "Arm B", "Arm C"), lty = c(1, 2, 3), lwd = 2)
 ```
-
-The multi-state model indicated that Arms B and C reduced the risk of moving from stable disease to progression compared with Arm A. The transition hazard ratios were approximately 0.56 for Arm B and 0.59 for Arm C for the stable-to-progression transition. There was no clear evidence that either arm changed the progression-to-death transition.
 
 ## Comparison of Methods
 
@@ -695,7 +713,23 @@ This is important because it shows that the similarity between PFS and composite
 
 The most clinically interesting finding was the possible effect of treatment sequencing on disease progression. The early Kaplan--Meier curves suggested a change in treatment-arm pattern around the two-month time point, which corresponds to the planned switch in Arm C. This supports the hypothesis that the timing of immunotherapy exposure may influence early disease control.
 
-Although these findings were exploratory and not statistically definitive, they are clinically meaningful. The results suggest that ipilimumab plus nivolumab may contribute to delayed progression when used early in the treatment sequence. This is consistent with the broader SECOMBIT interpretation that immunotherapy-first or planned-switch strategies may be favourable for many patients with metastatic BRAF V600-mutated melanoma [@ascierto2023; @ascierto2024].
+```{r km-two-month-os-discussion, fig.cap='Early overall survival pattern up to four months'}
+ggsurvplot(fit_os, data = clean_df,
+           xlab = "Time (months)", ylab = "Survival probability",
+           title = "Early Overall Survival Pattern",
+           risk.table = FALSE, pval = TRUE,
+           xlim = c(0, 4), ylim = c(0.90, 1.00), break.time.by = 1)$plot
+```
+
+```{r km-two-month-pfs-discussion, fig.cap='Early progression-free survival pattern up to four months'}
+ggsurvplot(fit_pfs, data = clean_df,
+           xlab = "Time (months)", ylab = "Survival probability",
+           title = "Early Progression-Free Survival Pattern",
+           risk.table = FALSE, pval = TRUE,
+           xlim = c(0, 4), ylim = c(0.90, 1.00), break.time.by = 1)$plot
+```
+
+Inspection of the early curves suggests that the treatment-arm pattern may change around the two-month point. This is clinically important because Arm C switches treatment at approximately eight weeks. Although this finding is exploratory, it suggests that ipilimumab plus nivolumab may contribute to delayed progression when used early in the treatment sequence. This interpretation is consistent with the broader SECOMBIT findings that immunotherapy-first or planned-switch strategies may be favourable for many patients with metastatic BRAF V600-mutated melanoma [@ascierto2023; @ascierto2024].
 
 ## Strengths
 
