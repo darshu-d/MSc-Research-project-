@@ -104,6 +104,12 @@ The dataset used in this project was obtained from an open-source version of the
 
 The dataset was suitable for this project because it contained multiple clinically important time-to-event outcomes that are related but not equivalent. It also allowed direct comparison between traditional survival methods and more advanced approaches such as win-ratio analysis, net-benefit analysis, and multi-state modelling.
 
+## Clinical Trial Inference and Predictive Modelling Context
+
+The methods applied in this project were used primarily in a clinical trial inference context, with the goal of estimating average treatment effects across Arms A, B, and C. Because the SECOMBIT study was randomised, comparisons between treatment arms can be interpreted as treatment-sequencing effects more strongly than would be possible in a purely observational dataset.
+
+However, several of these methods also have relevance for predictive modelling. Multi-state models are particularly suitable for prediction because they estimate the probability that a patient in a given state will remain stable, progress, or die at future time points. When patient-level covariates such as LDH, TMB, or JAK mutation status are incorporated into transition intensities, the model can be extended to produce personalised risk predictions. By contrast, the win ratio and net benefit are mainly trial-level summary methods; they compare treatment strategies across groups but do not naturally produce individual patient predictions.
+
 ## Aim and Objectives
 
 The aim of this project was to compare statistical strategies for handling multiple outcomes in health data, using the SECOMBIT dataset as an applied case study.
@@ -153,6 +159,8 @@ clean_df <- SECOMBIT %>%
 Missing data were assessed before fitting adjusted models. Missing values were present mainly in the JAK mutation variable. No formal imputation was performed. Therefore, regression models requiring all covariates used complete-case analysis. This means that participants with missing values in any covariate included in the model were excluded from that specific analysis.
 
 Complete-case analysis is simple and transparent, but it can reduce statistical power and may introduce bias if data are not missing completely at random [@little2019; @stefvanbuuren2018]. This limitation is especially relevant for multivariable Cox and logistic regression models, where the inclusion of JAK mutation status reduced the effective sample size.
+
+Table 1 below summarises the number of missing values for each variable in the dataset. Notably, TMB and JAK mutation each had 126 missing values, representing approximately 60% of the total sample.
 
 ```{r missing-summary, results='asis'}
 missing_tab <- clean_df %>%
@@ -238,9 +246,25 @@ The model estimated transition-specific hazards and state occupation probabiliti
 
 ## State-Transition Structure
 
-The intended clinical pathway can be represented as follows:
+In multi-state modelling, it is important to distinguish between the theoretical clinical pathway and the pathway actually observed in the dataset. The full theoretical model allows patients to move from stable disease to progression, from progression to death, and directly from stable disease to death. This direct stable-to-death transition is clinically possible because some patients may die before documented progression.
 
-```{r state-diagram, fig.cap='State-transition diagram for the multi-state model', echo=FALSE}
+```{r full-state-diagram, fig.cap='Full theoretical state-transition diagram for the multi-state model', echo=FALSE}
+grid.newpage()
+pushViewport(viewport())
+grid.text("Stable", x = 0.25, y = 0.72, gp = gpar(fontsize = 13, fontface = "bold"))
+grid.text("Progression", x = 0.72, y = 0.72, gp = gpar(fontsize = 13, fontface = "bold"))
+grid.text("Death", x = 0.49, y = 0.28, gp = gpar(fontsize = 13, fontface = "bold"))
+grid.lines(x = c(0.34, 0.61), y = c(0.72, 0.72), arrow = arrow(type = "closed", length = unit(0.15, "inches")))
+grid.lines(x = c(0.68, 0.53), y = c(0.66, 0.36), arrow = arrow(type = "closed", length = unit(0.15, "inches")))
+grid.lines(x = c(0.29, 0.45), y = c(0.66, 0.36), arrow = arrow(type = "closed", length = unit(0.15, "inches")))
+grid.text("Stable to Progression", x = 0.48, y = 0.78, gp = gpar(fontsize = 10))
+grid.text("Progression to Death", x = 0.72, y = 0.47, gp = gpar(fontsize = 10))
+grid.text("Stable to Death", x = 0.24, y = 0.47, gp = gpar(fontsize = 10))
+```
+
+In the SECOMBIT dataset used here, no patient died before progression. Therefore, the observed model fitted in this analysis used the simplified pathway shown below, with transitions from stable disease to progression and from progression to death only.
+
+```{r observed-state-diagram, fig.cap='Observed state-transition diagram fitted in this analysis', echo=FALSE}
 grid.newpage()
 pushViewport(viewport())
 grid.text("Stable", x = 0.5, y = 0.82, gp = gpar(fontsize = 13, fontface = "bold"))
@@ -252,15 +276,15 @@ grid.text("Stable to Progression", x = 0.68, y = 0.67, gp = gpar(fontsize = 10))
 grid.text("Progression to Death", x = 0.68, y = 0.37, gp = gpar(fontsize = 10))
 ```
 
-Although a direct transition from stable disease to death can occur in some oncology datasets, no such transition was observed in this dataset. Therefore, the fitted model allowed transitions from stable disease to progression and from progression to death.
-
 ## Software Implementation
 
-All analyses were conducted in R. The main packages used were `survival` for survival modelling, `survminer` for Kaplan--Meier plots, `msm` for multi-state modelling, `WinRatio` for win-ratio analysis, `BuyseTest` for net-benefit analysis, `tableone` for descriptive baseline tables, `broom` for model summaries, and `knitr`/`kableExtra` for table formatting [@therneau2024; @kassambara2021; @jackson2011; @buyse2024; @r2024].
+All analyses were conducted in `r R.version.string`. The main packages used were `survival` for survival modelling, `survminer` for Kaplan--Meier plots, `msm` for multi-state modelling, `WinRatio` for win-ratio analysis, `BuyseTest` for net-benefit analysis, `tableone` for descriptive baseline tables, `broom` for model summaries, and `knitr`/`kableExtra` for table formatting [@therneau2024; @kassambara2021; @jackson2011; @buyse2024; @r2024].
 
 # Results
 
 ## Descriptive Summary
+
+Table 2 below provides descriptive statistics for OS and PFS in months. The mean OS and PFS values describe the overall follow-up pattern in the study sample.
 
 ```{r numeric-summary, results='asis'}
 numeric_summary <- SECOMBIT %>%
@@ -289,6 +313,8 @@ kable(numeric_summary_long, digits = 2, caption = "Numeric summary of OS and PFS
 
 Only variables measured at or before treatment initiation were included in the baseline table. Outcome variables such as OS status and PFS status were excluded because they occur after treatment begins.
 
+Table 3 below presents baseline characteristics by treatment arm. This helps assess whether measured prognostic factors were broadly balanced across Arms A, B, and C before outcome analysis.
+
 ```{r baseline-table, results='asis'}
 vars <- c("Sites", "LDH", "TMB", "JAK")
 factorVars <- c("Sites", "LDH", "TMB", "JAK")
@@ -300,6 +326,8 @@ kable(tab1_df, caption = "Baseline characteristics by treatment arm")
 ```
 
 ## Event Counts by Treatment Arm
+
+Table 4 and Figure 3 below show the number of OS, PFS, and composite events in each treatment arm. These counts provide an initial descriptive comparison before model-based analysis.
 
 ```{r event-counts, results='asis'}
 event_count <- clean_df %>%
@@ -328,7 +356,13 @@ ggplot(event_long, aes(x = Arm, y = Events, fill = Endpoint)) +
 
 ## Logistic Regression Results
 
+Tables 5, 6, and 7 below present the adjusted logistic regression results for the OS, PFS, and composite endpoints respectively. These models estimate odds ratios for experiencing each event, but do not account for censoring or event timing.
+
 ```{r logistic-models, results='asis'}
+log_os_arm <- glm(binary_os ~ Arm, family = binomial, data = clean_df)
+log_pfs_arm <- glm(binary_pfs ~ Arm, family = binomial, data = clean_df)
+log_comp_arm <- glm(binary_comp ~ Arm, family = binomial, data = clean_df)
+
 log_os <- glm(binary_os ~ Arm + Sites + LDH + TMB + JAK, family = binomial, data = clean_df)
 log_pfs <- glm(binary_pfs ~ Arm + Sites + LDH + TMB + JAK, family = binomial, data = clean_df)
 log_comp <- glm(binary_comp ~ Arm + Sites + LDH + TMB + JAK, family = binomial, data = clean_df)
@@ -348,6 +382,8 @@ kable(tidy_logistic(log_comp), caption = "Logistic regression for composite even
 Logistic regression was useful as a preliminary event-based analysis, but it ignored event timing and censoring. Therefore, survival models were more appropriate for the main OS and PFS analyses.
 
 ## Kaplan--Meier Survival Curves and Log-Rank Tests
+
+Figures 4, 5, and 6 below show the Kaplan--Meier survival curves by treatment arm for OS, PFS, and the composite endpoint respectively. The corresponding log-rank p-values are displayed on each figure.
 
 ```{r km-os, fig.cap='Kaplan--Meier curve for overall survival by treatment arm'}
 fit_os <- survfit(Surv(os_time, os_status) ~ Arm, data = clean_df)
@@ -369,6 +405,8 @@ ggsurvplot(fit_comp, data = clean_df, xlab = "Time (months)", ylab = "Survival p
            title = "Composite Endpoint", risk.table = FALSE, pval = TRUE,
            conf.int = TRUE)$plot
 ```
+
+Table 8 below summarises the log-rank test statistics and p-values for each endpoint. This provides a formal unadjusted comparison of survival curves across treatment arms.
 
 ```{r logrank-tests, results='asis'}
 logrank_os <- survdiff(Surv(os_time, os_status) ~ Arm, data = clean_df)
@@ -393,7 +431,16 @@ The Kaplan--Meier curves for OS appeared relatively close, and the OS log-rank p
 
 ## Cox Proportional Hazards Models
 
+Tables 9, 10, and 11 below present the adjusted Cox proportional hazards model results for OS, PFS, and the composite endpoint respectively. Each model adjusts for treatment arm, number of metastatic sites, LDH level, TMB status, and JAK mutation status using complete-case analysis.
+
 ```{r cox-models, results='asis'}
+cox_os_arm <- coxph(Surv(os_time, os_status) ~ Arm,
+                    data = clean_df, ties = "efron")
+cox_pfs_arm <- coxph(Surv(pfs_time, pfs_status) ~ Arm,
+                     data = clean_df, ties = "efron")
+cox_comp_arm <- coxph(Surv(comp_time, comp_status) ~ Arm,
+                      data = clean_df, ties = "efron")
+
 cox_os <- coxph(Surv(os_time, os_status) ~ Arm + Sites + LDH + TMB + JAK,
                 data = clean_df, ties = "efron")
 cox_pfs <- coxph(Surv(pfs_time, pfs_status) ~ Arm + Sites + LDH + TMB + JAK,
@@ -415,6 +462,43 @@ kable(tidy_cox(cox_comp), caption = "Cox model for composite endpoint")
 
 In the Cox model for OS, the hazard ratios for Arm B and Arm C compared with Arm A were close to 1 with wide confidence intervals and non-significant p-values, suggesting no clear overall survival advantage in the adjusted model. For PFS, Arm B and JAK mutation showed protective trends, while greater metastatic-site burden and elevated LDH showed increased risk trends.
 
+To assess potential confounding and the effect of complete-case reduction, treatment effects were estimated using both crude and adjusted models. Crude models included treatment arm only and therefore used the full available treatment-arm sample, whereas adjusted models additionally controlled for Sites, LDH, TMB, and JAK mutation status.
+
+```{r crude-adjusted-comparison, results='asis'}
+extract_arm_effects <- function(model, model_name){
+  broom::tidy(model, exponentiate = TRUE, conf.int = TRUE) %>%
+    filter(grepl("Arm", term)) %>%
+    mutate(
+      Estimate = sprintf("%.2f (%.2f--%.2f)", estimate, conf.low, conf.high),
+      `p-value` = signif(p.value, 3),
+      Model = model_name
+    ) %>%
+    select(Model, Variable = term, Estimate, `p-value`)
+}
+
+comparison_table <- bind_rows(
+  extract_arm_effects(log_os_arm, "Crude Logistic OS"),
+  extract_arm_effects(log_os, "Adjusted Logistic OS"),
+  extract_arm_effects(log_pfs_arm, "Crude Logistic PFS"),
+  extract_arm_effects(log_pfs, "Adjusted Logistic PFS"),
+  extract_arm_effects(log_comp_arm, "Crude Logistic Composite"),
+  extract_arm_effects(log_comp, "Adjusted Logistic Composite"),
+  extract_arm_effects(cox_os_arm, "Crude Cox OS"),
+  extract_arm_effects(cox_os, "Adjusted Cox OS"),
+  extract_arm_effects(cox_pfs_arm, "Crude Cox PFS"),
+  extract_arm_effects(cox_pfs, "Adjusted Cox PFS"),
+  extract_arm_effects(cox_comp_arm, "Crude Cox Composite"),
+  extract_arm_effects(cox_comp, "Adjusted Cox Composite")
+)
+
+kable(comparison_table,
+      caption = "Comparison of crude and adjusted treatment effects")
+```
+
+Overall, comparison of crude and adjusted estimates helps determine whether treatment-arm effects are robust to adjustment for measured prognostic factors. If estimates are similar, this supports the interpretation that randomisation achieved reasonable balance across treatment groups. If adjusted estimates differ materially from crude estimates, this suggests that baseline covariates or complete-case selection may have influenced the observed treatment effect.
+
+Table 13 below reports the global Schoenfeld residual test results for the proportional hazards assumption. These tests help determine whether a single Cox hazard ratio is appropriate over the full follow-up period.
+
 ```{r ph-tests, results='asis'}
 ph_os <- cox.zph(cox_os)
 ph_pfs <- cox.zph(cox_pfs)
@@ -430,9 +514,15 @@ ph_tab <- data.frame(
 kable(ph_tab, caption = "Proportional hazards assumption tests")
 ```
 
-The proportional hazards test suggested a borderline violation for OS and a clearer violation for PFS. This indicates that treatment effects may vary over follow-up time, supporting the use of additional approaches such as multi-state modelling.
+The Schoenfeld residual tests indicated a borderline violation of the proportional hazards assumption for OS and a clearer violation for PFS and the composite endpoint. A violated proportional hazards assumption means that the hazard ratio between treatment arms is not constant over follow-up time, so reporting a single summary hazard ratio may be misleading.
+
+This finding provides direct methodological justification for the use of the multi-state model. Rather than summarising the entire PFS trajectory with one hazard ratio, the multi-state model estimates separate transition-specific hazard ratios for the stable-to-progression and progression-to-death transitions. This decomposition allows the analysis to show whether treatment sequencing mainly affects progression, post-progression mortality, or both.
+
+Several alternative approaches can also be used when proportional hazards assumptions are violated. Time-varying coefficients can be incorporated into an extended Cox model, allowing the hazard ratio to change as a function of follow-up time. Restricted mean survival time (RMST) summarises the expected event-free time up to a pre-specified horizon and does not require proportional hazards. Weighted log-rank tests, such as Fleming--Harrington tests, can give more emphasis to early or late survival differences. Landmark analysis can also divide follow-up at a fixed time point and fit separate models before and after that point. For this dataset, RMST and time-varying Cox models would be useful sensitivity checks alongside the multi-state model.
 
 ## Win-Ratio Results
+
+Table 14 below shows the pairwise win-ratio results. A win ratio greater than 1 indicates that the first-named arm won more matched pairs than it lost when OS and PFS were evaluated hierarchically.
 
 ```{r win-ratio, results='asis'}
 prepare_wr_data <- function(df, arms){
@@ -481,6 +571,8 @@ kable(wr_tab, caption = "Win-ratio comparison of treatment arms")
 The win-ratio analysis favoured Arm B over Arm A, with a win ratio of 1.49 (95% CI 0.93–2.40; p = 0.0997). Arm C also favoured over Arm A, with a win ratio of 1.59 (95% CI 1.00–2.52; p = 0.0503). Arm C compared with Arm B was close to neutral, with a win ratio of 1.06 (95% CI 0.61–1.84; p = 0.8372). Overall, Arms B and C showed favourable hierarchical outcome trends compared with Arm A, but there was no clear superiority between Arms B and C.
 
 ## Net-Benefit Results
+
+Table 15 below presents the net-benefit results by treatment arm comparison. A positive global net benefit indicates that the first-named arm produced more overall clinical advantage than the comparator when OS and PFS contributions are combined.
 
 ```{r net-benefit, results='asis', message=FALSE, warning=FALSE}
 nb_df_BA <- clean_df %>%
@@ -542,6 +634,8 @@ kable(nb_tab, digits = 3, caption = "Net-benefit comparison of treatment arms")
 
 The net-benefit analysis supported the same broad interpretation as the win-ratio analysis. Arm B showed a positive global net benefit of 0.220 compared with Arm A, with contributions from OS (0.134) and PFS (0.086; p = 0.031). Arm C showed a positive global net benefit of 0.2015 compared with Arm A, with contributions from OS (0.1323) and PFS (0.0692; p = 0.0499). The comparison between Arms C and B showed no meaningful advantage, with a global net benefit of -0.049.
 
+The hierarchical resolution process explains why the win-ratio and net-benefit results were driven predominantly by OS rather than PFS, despite OS individually showing no statistically significant arm difference (log-rank p = 0.246) and having fewer recorded events than PFS. Because every pair was first compared on OS, and PFS was only consulted for the residual pairs in which OS could not distinguish the two patients, small but consistent OS advantages were captured by the win ratio and net benefit in a way that the OS log-rank test alone could not detect, since the log-rank test evaluates OS in isolation rather than in combination with a secondary outcome. This is reflected in Table 15, where the OS contribution to the global net benefit for Arm B versus Arm A (0.134) exceeded the PFS contribution (0.086), confirming that many patient pairs were resolved at the OS stage of the hierarchy before PFS was considered.
+
 ## Multi-State Model Results
 
 ```{r msm-data}
@@ -581,6 +675,8 @@ msm_fit <- msm(state ~ time, subject = id, data = msm_df, qmatrix = Q,
                covariates = ~ Arm, exacttimes = TRUE)
 ```
 
+Table 16 below presents the transition-specific hazard ratios from the multi-state model by treatment arm. Arm A is the reference category, and hazard ratios below 1 indicate a reduced transition risk relative to Arm A.
+
 ```{r msm-transition-hr-table, results='asis'}
 msm_hr_tab <- data.frame(
   `Treatment Arm` = c("Arm A (baseline)", "Arm B", "Arm C"),
@@ -602,6 +698,8 @@ kable(msm_hr_tab,
 ```
 
 The multi-state model indicated that Arms B and C reduced the transition hazard from stable disease to progression compared with Arm A. Arm B had a stable-to-progression hazard ratio of 0.56, while Arm C had a stable-to-progression hazard ratio of 0.59. There was no clear evidence that either arm changed the progression-to-death transition when treatment arm alone was included in the multi-state model.
+
+Tables 17 and 18 and Figures 7, 8, and 9 below show state occupation probabilities over time estimated from the multi-state model. These outputs show the predicted probabilities of remaining stable, progressing, or dying over follow-up.
 
 ```{r transition-prob-12, results='asis'}
 pt_A_12 <- pmatrix.msm(msm_fit, t = 12, covariates = list(Arm = "A"))
@@ -671,6 +769,8 @@ legend("topleft", legend = c("Arm A", "Arm B", "Arm C"), lty = c(1, 2, 3), lwd =
 
 ## Comparison of Methods
 
+Table 19 below provides a structured comparison of all statistical methods applied in this project across six criteria. Methods are ordered from least to most capable of handling multiple outcomes simultaneously.
+
 ```{r method-comparison-table, results='asis'}
 method_comp <- data.frame(
   Method = c("Logistic regression", "Kaplan--Meier", "Log-rank test", "Cox model", "Win ratio", "Net benefit", "Multi-state model"),
@@ -709,6 +809,15 @@ A key finding was that PFS and the composite endpoint produced almost identical 
 
 This is important because it shows that the similarity between PFS and composite results was not a coding error. It also highlights a limitation of composite endpoints: if one component dominates the composite, the result may not reflect the full clinical hierarchy of outcomes. In this case, the composite endpoint did not add substantial information beyond PFS.
 
+## Why the Methods Give Different Results
+
+The differences in p-values and effect sizes across methods reflect their distinct mathematical structures rather than inconsistencies in the data. The log-rank test treats all events within a given endpoint as equivalent and asks whether the observed number of events in each arm differs from expectation under the null hypothesis. It therefore gives the greatest statistical weight to the most frequent event, which in this dataset is progression.
+
+The win ratio uses a different principle. Every patient in one arm is compared with every patient in another arm, and pairs are resolved hierarchically. OS is evaluated first, and PFS is used only when OS is tied. This means the win ratio gives mathematical priority to death, even though death is less frequent than progression. As a result, the win-ratio p-values for B vs A and C vs A can appear more favourable than the OS log-rank p-value alone because the win ratio accumulates information from both OS and PFS in clinical order of importance.
+
+The net-benefit results reflect the same hierarchical structure. The OS contribution to the global net benefit can be larger than the PFS contribution even when OS is not individually significant, because every OS win in a matched pair is counted before any PFS win. This comparison highlights the key limitation of the composite endpoint in this dataset: because no patient died before progressing, the composite endpoint was driven entirely by progression and did not give additional priority to death.
+
+
 ## Novel Findings
 
 The most clinically interesting finding was the possible effect of treatment sequencing on disease progression. The early Kaplan--Meier curves suggested a change in treatment-arm pattern around the two-month time point, which corresponds to the planned switch in Arm C. This supports the hypothesis that the timing of immunotherapy exposure may influence early disease control.
@@ -731,6 +840,22 @@ ggsurvplot(fit_pfs, data = clean_df,
 
 Inspection of the early curves suggests that the treatment-arm pattern may change around the two-month point. This is clinically important because Arm C switches treatment at approximately eight weeks. Although this finding is exploratory, it suggests that ipilimumab plus nivolumab may contribute to delayed progression when used early in the treatment sequence. This interpretation is consistent with the broader SECOMBIT findings that immunotherapy-first or planned-switch strategies may be favourable for many patients with metastatic BRAF V600-mutated melanoma [@ascierto2023; @ascierto2024].
 
+### Drug Swapping and Treatment Sequencing Strategy
+
+A closer examination of the treatment administration schedule across the three arms helps explain the early Kaplan--Meier crossover described above. All three arms in SECOMBIT eventually receive both treatment classes, targeted therapy (encorafenib plus binimetinib) and immunotherapy (ipilimumab plus nivolumab), but the order and trigger for swapping between them differs substantially by arm.
+
+In Arm A, encorafenib plus binimetinib is given first, and the swap to ipilimumab plus nivolumab occurs only after disease progression. In Arm B, this sequence is reversed: ipilimumab plus nivolumab is given first, with the swap to encorafenib plus binimetinib occurring only after progression. In Arm C, encorafenib plus binimetinib is given for a fixed induction period of eight weeks, after which patients are switched to ipilimumab plus nivolumab on a pre-planned schedule, regardless of whether progression has occurred, with the swap back to encorafenib plus binimetinib reserved for after progression on immunotherapy.
+
+This distinction matters because it separates the three arms into two fundamentally different sequencing ideas. Arms A and B's second-line switches are reactive: the drug class is changed only once progression has already been confirmed. Arm C's first switch, by contrast, is proactive: the swap to immunotherapy is scheduled in advance and does not wait for evidence of treatment failure.
+
+The early-curve analysis in Section 4.5, Figures 10 and 11, showed a crossover at approximately the two-month time point across both the OS and the PFS/composite panels. This timing corresponds exactly to the point at which Arm C executes its planned switch from targeted therapy to immunotherapy. Before this point, Arm C's curve tracked closely with Arm A; shortly afterward, Arm C's trajectory shifted. Arm B, which had been receiving immunotherapy from treatment initiation with no induction period, showed the clearest separation from the other two arms. This pattern, taken together with the multi-state model results in Section 3.9 showing that Arms B and C both substantially reduced the stable-to-progression transition hazard relative to Arm A (HR = 0.56 and 0.59 respectively), suggests that earlier exposure to immunotherapy, introduced either immediately or on a fixed schedule rather than in response to progression, was associated with better early disease control than withholding immunotherapy until first-line treatment had already failed.
+
+This observation has a direct practical implication for treatment sequencing strategy. Arm A's design suggests that delaying immunotherapy until progression on targeted therapy is confirmed was associated with the least favourable outcomes across nearly every endpoint examined in this project, including the highest event counts (Table 4), the least favourable win-ratio and net-benefit comparisons (Tables 14 and 15), and the highest stable-to-progression transition hazard (Table 16). By the time progression is detected under a reactive strategy, the disease has typically already advanced past the point at which the first-line therapy was providing adequate control, and switching to a second treatment class at that stage may come too late to fully recapture the benefit that earlier exposure would have provided.
+
+By contrast, both arms that introduced immunotherapy before confirmed progression, Arm B immediately and Arm C on a fixed eight-week schedule, showed more favourable disease trajectories. This suggests that, within a treatment sequencing strategy of this kind, clinicians and trial designers should be cautious about using disease progression as the sole trigger for swapping drug classes. A planned, time-based introduction of immunotherapy, rather than a swap reserved exclusively for treatment failure, appears to produce better early and sustained disease control in this dataset.
+
+This finding should be interpreted cautiously. The early-curve crossover is based on a small number of events within the first four months of follow-up, and the trial was not formally powered to test the timing of the swap as an isolated variable independent of the overall treatment sequence. Nonetheless, the consistency between the early Kaplan--Meier crossover, the multi-state transition hazards, and the win-ratio and net-benefit comparisons gives reasonable support to the conclusion that avoiding a purely progression-triggered drug swap, in favour of an earlier or scheduled introduction of immunotherapy, is associated with improved outcomes in this analysis. This question warrants further investigation in a trial specifically designed to isolate the effect of swap timing from the effect of drug sequence.
+
 ## Strengths
 
 A strength of this project is that it compared traditional and advanced statistical methods using the same clinical dataset. This allowed direct comparison across methods in terms of censoring, timing, covariate adjustment, clinical hierarchy, and disease pathway interpretation. Another strength is the use of multi-state modelling, which provided clinically interpretable transition probabilities rather than only endpoint-specific hazard ratios.
@@ -740,6 +865,12 @@ A strength of this project is that it compared traditional and advanced statisti
 The main limitation was the relatively small sample size, with approximately 68--69 patients in each arm. This reduced statistical power, especially for pairwise treatment comparisons and transition-specific multi-state modelling. Missingness in the JAK mutation variable reduced the effective sample size for adjusted models. The proportional hazards assumption was also questionable for some endpoints, which limits interpretation of Cox model hazard ratios.
 
 Another limitation was that the dataset contained only one observed transition pathway: stable disease to progression and progression to death. Since no patient died before progression, the multi-state model could not estimate a direct stable-to-death transition. This limits generalisability to datasets where death before progression is observed.
+
+## Clinical Trial and Predictive Modelling Implications
+
+In this project, the methods were mainly used for clinical trial inference: estimating whether average outcomes differed across treatment arms. The randomised SECOMBIT design supports this use because treatment arm was assigned by design rather than chosen by clinicians or patients.
+
+The multi-state model also has predictive modelling potential. The state occupation probabilities estimate the probability that a patient starting in stable disease will remain stable, progress, or die at future time points. If individual-level covariates such as LDH, TMB, and JAK mutation status are added to the transition models, this framework could generate patient-specific probability estimates. This is a major advantage over single-endpoint Cox models, log-rank tests, win ratios, and net-benefit summaries, which mainly describe average group-level treatment differences.
 
 ## Future Work
 
