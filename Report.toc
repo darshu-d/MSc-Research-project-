@@ -1,0 +1,47 @@
+\contentsline {section}{\numberline {1}Introduction}{4}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Background}{4}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Multiple Outcomes in Clinical Research}{4}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Challenges in Analysing Multiple Outcomes}{4}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}SECOMBIT Trial Overview}{4}{subsection.1.4}%
+\contentsline {subsection}{\numberline {1.5}Dataset Description}{5}{subsection.1.5}%
+\contentsline {subsection}{\numberline {1.6}Clinical Trial Inference and Predictive Modelling Context}{5}{subsection.1.6}%
+\contentsline {subsection}{\numberline {1.7}Aim and Objectives}{5}{subsection.1.7}%
+\contentsline {section}{\numberline {2}Methods}{6}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Data Preparation}{6}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Missing Data Handling}{6}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Statistical Methods}{6}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Logistic Regression}{6}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}Kaplan--Meier Estimation}{7}{subsubsection.2.3.2}%
+\contentsline {subsubsection}{\numberline {2.3.3}Log-Rank Test}{7}{subsubsection.2.3.3}%
+\contentsline {subsubsection}{\numberline {2.3.4}Cox Proportional Hazards Model}{7}{subsubsection.2.3.4}%
+\contentsline {subsubsection}{\numberline {2.3.5}Composite Endpoint Analysis}{7}{subsubsection.2.3.5}%
+\contentsline {subsubsection}{\numberline {2.3.6}Win Ratio}{7}{subsubsection.2.3.6}%
+\contentsline {subsubsection}{\numberline {2.3.7}Net Benefit}{8}{subsubsection.2.3.7}%
+\contentsline {subsubsection}{\numberline {2.3.8}Multi-State Models}{8}{subsubsection.2.3.8}%
+\contentsline {subsection}{\numberline {2.4}State-Transition Structure}{8}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Software Implementation}{10}{subsection.2.5}%
+\contentsline {section}{\numberline {3}Results}{10}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Descriptive Summary}{10}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Baseline Characteristics}{11}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Event Counts by Treatment Arm}{11}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Logistic Regression Results}{12}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Kaplan--Meier Survival Curves and Log-Rank Tests}{13}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Cox Proportional Hazards Models}{16}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}Win-Ratio Results}{18}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}Net-Benefit Results}{19}{subsection.3.8}%
+\contentsline {subsection}{\numberline {3.9}Multi-State Model Results}{19}{subsection.3.9}%
+\contentsline {subsection}{\numberline {3.10}Comparison of Methods}{23}{subsection.3.10}%
+\contentsline {section}{\numberline {4}Discussion}{23}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Main Findings}{23}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Interpretation of Treatment Sequencing}{23}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Composite Endpoint and PFS Similarity}{24}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Why the Methods Give Different Results}{24}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Novel Findings}{24}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}Drug Swapping and Treatment Sequencing Strategy}{26}{subsubsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.6}Strengths}{27}{subsection.4.6}%
+\contentsline {subsection}{\numberline {4.7}Limitations}{27}{subsection.4.7}%
+\contentsline {subsection}{\numberline {4.8}Clinical Trial and Predictive Modelling Implications}{27}{subsection.4.8}%
+\contentsline {subsection}{\numberline {4.9}Future Work}{28}{subsection.4.9}%
+\contentsline {section}{\numberline {5}Conclusion}{28}{section.5}%
+\contentsline {section}{\numberline {6}Project Link}{28}{section.6}%
+\contentsline {section}{References}{28}{section*.13}%
